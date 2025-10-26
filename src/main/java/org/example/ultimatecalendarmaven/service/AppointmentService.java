@@ -3,14 +3,14 @@ package org.example.ultimatecalendarmaven.service;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
-import org.example.ultimatecalendarmaven.model.Appointment;
+import org.example.ultimatecalendarmaven.model.*;
 import org.example.ultimatecalendarmaven.repository.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -23,40 +23,98 @@ public class AppointmentService {
     private final StaffRepository staffRepository;
     private final CustomerRepository customerRepository;
     private final AppointmentMapper appointmentMapper;
+    private final CustomerService customerService;
 
-    public List<Appointment> findAll() {
-        return appointmentRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<Appointment> findByTenantAndRange(UUID tenantId, OffsetDateTime from, OffsetDateTime to) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
+
+        // consulta simple: si no hay rango, devolvemos las últimas N (puedes paginar más adelante)
+        List<Appointment> all = appointmentRepository.findAll(); // reemplázalo por query scoped si quieres optimizar
+        return all.stream()
+                .filter(a -> a.getTenant().getId().equals(tenant.getId()))
+                .filter(a -> from == null || !a.getEndsAt().isBefore(from))
+                .filter(a -> to == null || !a.getStartsAt().isAfter(to))
+                .toList();
     }
 
-    public Optional<Appointment> findById(UUID id) {
-        return appointmentRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Optional<Appointment> findByIdScoped(UUID tenantId, UUID id) {
+        return appointmentRepository.findById(id)
+                .filter(a -> a.getTenant().getId().equals(tenantId));
     }
 
-    /**
-     * Creates an Appointment from a DTO, resolving all foreign keys by UUID.
-     */
     public Appointment create(AppointmentRequestDTO dto) {
-        var entity = appointmentMapper.toEntity(dto);
-        entity.setTenant(tenantRepository.findById(dto.getTenantId())
-                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + dto.getTenantId())));
-        entity.setService(serviceRepository.findById(dto.getServiceId())
-                .orElseThrow(() -> new IllegalArgumentException("Service not found: " + dto.getServiceId())));
-        entity.setStaff(staffRepository.findById(dto.getStaffId())
-                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + dto.getStaffId())));
-        entity.setCustomer(customerRepository.findById(dto.getCustomerId())
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + dto.getCustomerId())));
-        return appointmentRepository.save(entity);
-    }
+        // 1) Cargar entidades y validar pertenencia al tenant
+        UUID tenantId = Objects.requireNonNull(dto.getTenantId(), "tenantId is required");
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
 
-    public Appointment save(Appointment appointment) {
-        return appointmentRepository.save(appointment);
-    }
+        ServiceEntity service = serviceRepository.findById(dto.getServiceId())
+                .orElseThrow(() -> new IllegalArgumentException("Service not found: " + dto.getServiceId()));
+        if (!service.getTenant().getId().equals(tenantId)) throw new IllegalArgumentException("Service not in tenant");
 
-    public boolean deleteById(UUID id) {
-        if (appointmentRepository.existsById(id)) {
-            appointmentRepository.deleteById(id);
-            return true;
+        Staff staff = staffRepository.findById(dto.getStaffId())
+                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + dto.getStaffId()));
+        if (!staff.getTenant().getId().equals(tenantId)) throw new IllegalArgumentException("Staff not in tenant");
+
+
+        Customer customer = customerRepository.findByTenantAndPhone(tenant, dto.getCustomer().getPhone())
+                .orElseGet(() -> {
+                    // crear customer si no existe
+                    Customer newCustomer = new Customer();
+                    newCustomer.setTenant(tenant);
+                    newCustomer.setName(dto.getCustomer().getName());
+                    newCustomer.setPhone(dto.getCustomer().getPhone());
+                    return customerRepository.save(newCustomer);
+                });
+        if (!customer.getTenant().getId().equals(tenantId)) throw new IllegalArgumentException("Customer not in tenant");
+
+        // 2) Mapear DTO -> entidad y setear relaciones
+        Appointment entity = appointmentMapper.toEntity(dto);
+        entity.setTenant(tenant);
+        entity.setService(service);
+        entity.setStaff(staff);
+        entity.setCustomer(customer);
+
+        // (Opcional) 3) Validación previa de solape en memoria (rápida/optimista)
+        // Reutilizamos method del repo: any cita activa que solape el rango?
+        boolean hasOverlap = !appointmentRepository
+                .findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(
+                        staff, entity.getEndsAt(), entity.getStartsAt())
+                .isEmpty();
+        if (hasOverlap) {
+            throw new ConflictException("Slot not available");
         }
-        return false;
+
+        // 4) Persistir; si hay carrera, el EXCLUDE en DB lanzará una excepción de integridad -> 409
+        try {
+            return appointmentRepository.save(entity);
+        } catch (DataIntegrityViolationException ex) {
+            // probablemente por constraint de solape (EXCLUDE)
+            throw new ConflictException("Slot not available", ex);
+        }
+    }
+
+    public Appointment updateStatus(UUID tenantId, UUID id, AppointmentStatus status) {
+        Appointment appt = appointmentRepository.findById(id)
+                .filter(a -> a.getTenant().getId().equals(tenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Appointment not found: " + id));
+        appt.setStatus(status);
+        return appointmentRepository.save(appt);
+    }
+
+    public boolean deleteScoped(UUID tenantId, UUID id) {
+        return appointmentRepository.findById(id)
+                .filter(a -> a.getTenant().getId().equals(tenantId))
+                .map(a -> { appointmentRepository.delete(a); return true; })
+                .orElse(false);
+    }
+
+    // ---- Error de conflicto semántico (409)
+    public static class ConflictException extends RuntimeException {
+        public ConflictException(String msg) { super(msg); }
+        public ConflictException(String msg, Throwable t) { super(msg, t); }
     }
 }
