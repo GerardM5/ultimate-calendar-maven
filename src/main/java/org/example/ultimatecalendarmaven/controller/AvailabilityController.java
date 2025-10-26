@@ -47,6 +47,6 @@ public class AvailabilityController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to
     ) {
-        return availabilityService.getAvailabilityByDay(tenantId, serviceId, staffId, from.toLocalDate(), to.toLocalDate());
+        return availabilityService.getAvailabilityByDay(tenantId, serviceId, staffId, from, to);
     }
 }

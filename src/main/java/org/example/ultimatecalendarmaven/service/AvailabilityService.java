@@ -112,7 +112,7 @@ public class AvailabilityService {
 
     @Transactional(readOnly = true)
     public List<DayAvailabilityDTO> getAvailabilityByDay(
-            UUID tenantId, UUID serviceId, UUID staffId, LocalDate from, LocalDate to
+            UUID tenantId, UUID serviceId, UUID staffId, OffsetDateTime from, OffsetDateTime to
     ) {
         if (from == null || to == null) {
             throw new IllegalArgumentException("from/to are required");
@@ -138,29 +138,22 @@ public class AvailabilityService {
             }
         }
 
-        ZoneId zone = ZoneId.of(tenant.getTimezone());
-
         List<DayAvailabilityDTO> result = new ArrayList<>();
 
-        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+        for (OffsetDateTime d = from; !d.isAfter(to); d = d.plusDays(1)) {
             // construimos el request del día
-            var req = org.example.ultimatecalendarmaven.dto.AvailabilityRequestDTO.builder()
+            var req = AvailabilityRequestDTO.builder()
                     .tenantId(tenantId)
                     .serviceId(serviceId)
                     .staffId(staffId)
-                    .day(d)
+                    .day(d.toLocalDate())
                     .build();
 
             // Si hay al menos un slot -> available=true
             boolean available = !getAvailability(req).isEmpty();
 
-            // Inicio del día en la zona del tenant -> UTC ISO
-            OffsetDateTime dayStartUtc = ZonedDateTime.of(d, LocalTime.MIDNIGHT, zone)
-                    .withZoneSameInstant(ZoneOffset.UTC)
-                    .toOffsetDateTime();
-
             result.add(DayAvailabilityDTO.builder()
-                    .date(dayStartUtc)
+                    .date(d)
                     .available(available)
                     .build());
         }
