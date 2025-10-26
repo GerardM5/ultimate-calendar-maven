@@ -77,6 +77,7 @@ public class AppointmentService {
         entity.setService(service);
         entity.setStaff(staff);
         entity.setCustomer(customer);
+        entity.setStatus(AppointmentStatus.valueOf("PENDING"));
 
         // (Opcional) 3) Validación previa de solape en memoria (rápida/optimista)
         // Reutilizamos method del repo: any cita activa que solape el rango?

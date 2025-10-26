@@ -2,6 +2,9 @@ package org.example.ultimatecalendarmaven.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
+
 import java.time.*;
 import java.util.*;
 
@@ -35,7 +38,8 @@ public class Appointment {
     private Customer customer;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(name = "status", columnDefinition = "appointment_status", nullable = false)
     private AppointmentStatus status;
 
     @Column(name = "starts_at", nullable = false)
