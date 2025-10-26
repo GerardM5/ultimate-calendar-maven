@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.AvailabilityRequestDTO;
+import org.example.ultimatecalendarmaven.dto.DayAvailabilityDTO;
 import org.example.ultimatecalendarmaven.dto.SlotDTO;
 import org.example.ultimatecalendarmaven.model.*;
 import org.example.ultimatecalendarmaven.repository.*;
@@ -107,6 +108,63 @@ public class AvailabilityService {
                             .build();
                 })
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DayAvailabilityDTO> getAvailabilityByDay(
+            UUID tenantId, UUID serviceId, UUID staffId, LocalDate from, LocalDate to
+    ) {
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("from/to are required");
+        }
+        if (to.isBefore(from)) {
+            throw new IllegalArgumentException("'to' must be on or after 'from'");
+        }
+
+        // Reutilizamos validaciones básicas cargando tenant/service/staff solo una vez
+        var tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
+        var service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new IllegalArgumentException("Service not found: " + serviceId));
+        if (!service.getTenant().getId().equals(tenantId)) {
+            throw new IllegalArgumentException("Service not in tenant");
+        }
+        Staff staff = null;
+        if (staffId != null) {
+            staff = staffRepository.findById(staffId)
+                    .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+            if (!staff.getTenant().getId().equals(tenantId)) {
+                throw new IllegalArgumentException("Staff not in tenant");
+            }
+        }
+
+        ZoneId zone = ZoneId.of(tenant.getTimezone());
+
+        List<DayAvailabilityDTO> result = new ArrayList<>();
+
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            // construimos el request del día
+            var req = org.example.ultimatecalendarmaven.dto.AvailabilityRequestDTO.builder()
+                    .tenantId(tenantId)
+                    .serviceId(serviceId)
+                    .staffId(staffId)
+                    .day(d)
+                    .build();
+
+            // Si hay al menos un slot -> available=true
+            boolean available = !getAvailability(req).isEmpty();
+
+            // Inicio del día en la zona del tenant -> UTC ISO
+            OffsetDateTime dayStartUtc = ZonedDateTime.of(d, LocalTime.MIDNIGHT, zone)
+                    .withZoneSameInstant(ZoneOffset.UTC)
+                    .toOffsetDateTime();
+
+            result.add(DayAvailabilityDTO.builder()
+                    .date(dayStartUtc)
+                    .available(available)
+                    .build());
+        }
+        return result;
     }
 
     // ----- Helpers de rangos -----
