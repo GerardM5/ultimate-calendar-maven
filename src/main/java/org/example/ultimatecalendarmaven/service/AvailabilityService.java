@@ -14,6 +14,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.example.ultimatecalendarmaven.repository.StaffServiceRepository;
+import org.example.ultimatecalendarmaven.model.StaffService;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,6 +29,7 @@ public class AvailabilityService {
     private final TimeOffRepository timeOffRepository;
     private final ResourceLockRepository resourceLockRepository;
     private final AppointmentRepository appointmentRepository;
+    private final StaffServiceRepository staffServiceRepository;
 
     public List<SlotDTO> getAvailability(AvailabilityRequestDTO req) {
         Tenant tenant = tenantRepository.findById(req.getTenantId())
@@ -34,69 +38,51 @@ public class AvailabilityService {
         ServiceEntity service = serviceRepository.findById(req.getServiceId())
                 .orElseThrow(() -> new IllegalArgumentException("Service not found: " + req.getServiceId()));
 
-        UUID staffId = Objects.requireNonNull(req.getStaffId(), "staffId is required for now");
-
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
-
-        if (!staff.getTenant().getId().equals(tenant.getId()) || !service.getTenant().getId().equals(tenant.getId())) {
-            throw new IllegalArgumentException("Staff/Service not in tenant");
+        // Validación de pertenencia del service al tenant
+        if (!service.getTenant().getId().equals(tenant.getId())) {
+            throw new IllegalArgumentException("Service not in tenant");
         }
 
-        // Zona horaria del tenant
+        LocalDate day = req.getDay();
         ZoneId zone = ZoneId.of(tenant.getTimezone());
 
-        // Ventana del día en zona local del tenant [day 00:00, next day 00:00)
-        LocalDate day = req.getDay();
-        ZonedDateTime dayStartLocal = day.atStartOfDay(zone);
-        ZonedDateTime dayEndLocal = day.plusDays(1).atStartOfDay(zone);
+        List<Range> slotsAll = new ArrayList<>();
 
-        OffsetDateTime fromUtc = dayStartLocal.toOffsetDateTime();
-        OffsetDateTime toUtc = dayEndLocal.toOffsetDateTime();
+        if (req.getStaffId() != null) {
+            // Modo: un staff concreto
+            UUID staffId = req.getStaffId();
+            Staff staff = staffRepository.findById(staffId)
+                    .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+            if (!staff.getTenant().getId().equals(tenant.getId())) {
+                throw new IllegalArgumentException("Staff not in tenant");
+            }
+            slotsAll.addAll(computeSlotsForStaff(tenant, service, staff, day));
+        } else {
+            // Modo: todos los staff que pueden hacer este servicio en este tenant
+            List<Staff> candidates = staffServiceRepository.findByService(service).stream()
+                    .map(StaffService::getStaff)
+                    .filter(Objects::nonNull)
+                    .filter(Staff::isActive)
+                    .filter(s -> s.getTenant() != null && tenant.getId().equals(s.getTenant().getId()))
+                    .toList();
 
-        // 1) Ventanas base por working hours del staff para ese weekday
-        int weekday = day.getDayOfWeek().getValue() % 7; // 0=domingo ... 6=sábado en tu esquema (pgsql: 0..6)
-        // Corregimos: Java usa 1..7 (MON..SUN). Tu esquema 0..6 con 0=domingo:
-        int weekdayPg = (day.getDayOfWeek() == DayOfWeek.SUNDAY) ? 0 : day.getDayOfWeek().getValue();
+            for (Staff s : candidates) {
+                slotsAll.addAll(computeSlotsForStaff(tenant, service, s, day));
+            }
+        }
 
-        List<WorkingHours> wh = workingHoursRepository.findByStaffAndWeekdayOrderByStartTimeAsc(staff, weekdayPg);
-
-        // Convertimos cada wh (LocalTime) a rango en UTC dentro del día
-        List<Range> base = wh.stream()
-                .map(w -> {
-                    ZonedDateTime s = ZonedDateTime.of(day, w.getStartTime(), zone);
-                    ZonedDateTime e = ZonedDateTime.of(day, w.getEndTime(), zone);
-                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime());
-                })
-                .collect(Collectors.toList());
-
-        // 2) Restar ausencias y bloqueos del día
-        List<Range> blockers = new ArrayList<>();
-        timeOffRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(
-                staff, toUtc, fromUtc
-        ).forEach(t -> blockers.add(new Range(t.getStartsAt(), t.getEndsAt())));
-
-        resourceLockRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(
-                staff, toUtc, fromUtc
-        ).forEach(r -> blockers.add(new Range(r.getStartsAt(), r.getEndsAt())));
-
-        // 3) Restar citas activas (PENDING/CONFIRMED/COMPLETED) del día
-        appointmentRepository.findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(
-                staff, toUtc, fromUtc
-        ).forEach(a -> blockers.add(new Range(a.getStartsAt(), a.getEndsAt())));
-
-        // 4) Calculamos free = base - blockers (unión de bloqueos)
-        List<Range> mergedBlockers = merge(blockers);
-        List<Range> free = subtractAll(base, mergedBlockers);
-
-        // 5) Segmentar por tamaño = duración + buffers
-        int minutes = service.getDurationMin() + service.getBufferBefore() + service.getBufferAfter();
-        List<Range> slots = splitBySize(free, Duration.ofMinutes(minutes));
+        // Unificar slots duplicados (mismo start/end) y ordenarlos
+        Map<String, Range> unique = new HashMap<>();
+        for (Range r : slotsAll) {
+            String key = r.start.toString() + ":" + r.end.toString();
+            unique.putIfAbsent(key, r);
+        }
+        List<Range> merged = unique.values().stream()
+                .sorted(Comparator.comparing((Range r) -> r.start).thenComparing(r -> r.end))
+                .toList();
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-
-        // 6) Mapear a DTOs (UTC + strings en local)
-        return slots.stream()
+        return merged.stream()
                 .map(r -> {
                     ZonedDateTime sLocal = r.start.atZoneSameInstant(zone);
                     ZonedDateTime eLocal = r.end.atZoneSameInstant(zone);
@@ -108,6 +94,38 @@ public class AvailabilityService {
                             .build();
                 })
                 .toList();
+    }
+
+    private List<Range> computeSlotsForStaff(Tenant tenant, ServiceEntity service, Staff staff, LocalDate day) {
+        ZoneId zone = ZoneId.of(tenant.getTimezone());
+
+        ZonedDateTime dayStartLocal = day.atStartOfDay(zone);
+        ZonedDateTime dayEndLocal = day.plusDays(1).atStartOfDay(zone);
+        OffsetDateTime fromUtc = dayStartLocal.toOffsetDateTime();
+        OffsetDateTime toUtc = dayEndLocal.toOffsetDateTime();
+
+        int weekdayCode = day.getDayOfWeek().getValue(); // 1=Monday ... 7=Sunday
+        List<WorkingHours> wh = workingHoursRepository.findByStaffAndWeekdayOrderByStartTimeAsc(staff, weekdayCode);
+
+        List<Range> base = wh.stream()
+                .map(w -> {
+                    ZonedDateTime s = ZonedDateTime.of(day, w.getStartTime(), zone);
+                    ZonedDateTime e = ZonedDateTime.of(day, w.getEndTime(), zone);
+                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime());
+                })
+                .collect(Collectors.toList());
+
+        List<Range> blockers = new ArrayList<>();
+        timeOffRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, toUtc, fromUtc)
+                .forEach(t -> blockers.add(new Range(t.getStartsAt(), t.getEndsAt())));
+        resourceLockRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, toUtc, fromUtc)
+                .forEach(r -> blockers.add(new Range(r.getStartsAt(), r.getEndsAt())));
+        appointmentRepository.findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(staff, toUtc, fromUtc)
+                .forEach(a -> blockers.add(new Range(a.getStartsAt(), a.getEndsAt())));
+
+        List<Range> free = subtractAll(base, merge(blockers));
+        int minutes = service.getDurationMin() + service.getBufferBefore() + service.getBufferAfter();
+        return splitBySize(free, Duration.ofMinutes(minutes));
     }
 
     @Transactional(readOnly = true)
