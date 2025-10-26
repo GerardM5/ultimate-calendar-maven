@@ -11,11 +11,13 @@ import java.util.*;
 @Table(name = "staff_service")
 public class StaffService {
     @EmbeddedId
-    private StaffServiceId id;
+    @Builder.Default
+    private StaffServiceId id = new StaffServiceId();
 
     public StaffService(Staff staff, ServiceEntity service) {
         this.staff = staff;
         this.service = service;
+        this.id = new StaffServiceId(staff.getId(), service.getId());
     }
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

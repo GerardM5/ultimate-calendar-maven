@@ -27,7 +27,7 @@ public class WorkingHours {
     private Staff staff;
 
     @Column(nullable = false)
-    private int weekday; // 0..6
+    private int weekday; // 1..7 (Monday..Sunday)
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
