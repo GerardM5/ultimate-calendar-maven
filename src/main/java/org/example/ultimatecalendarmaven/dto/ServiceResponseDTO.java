@@ -15,5 +15,4 @@ public class ServiceResponseDTO {
     private int priceCents;
     private int bufferBefore;
     private int bufferAfter;
-    private Boolean active;
 }
