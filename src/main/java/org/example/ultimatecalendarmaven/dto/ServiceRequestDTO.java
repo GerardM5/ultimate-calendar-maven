@@ -13,6 +13,10 @@ public class ServiceRequestDTO {
     @NotBlank
     private String name;
 
+    private String description;
+
+    private String imageUrl;
+
     @Positive
     private int durationMin;
 

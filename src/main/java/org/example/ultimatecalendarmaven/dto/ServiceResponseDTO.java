@@ -9,6 +9,8 @@ public class ServiceResponseDTO {
     private UUID id;
     private UUID tenantId;
     private String name;
+    private String description;
+    private String imageUrl;
     private int durationMin;
     private int priceCents;
     private int bufferBefore;

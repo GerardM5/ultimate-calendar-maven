@@ -23,6 +23,12 @@ public class ServiceEntity {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 1024)
+    private String description;
+
+    @Column(name = "image_url", length = 2048)
+    private String imageUrl;
+
     @Column(name = "duration_min", nullable = false)
     private int durationMin;
 
