@@ -15,7 +15,5 @@ public class AppointmentRequestDTO {
     private UUID staffId;
     private CustomerRequestDTO customer;
     private OffsetDateTime startsAt;
-    private OffsetDateTime endsAt;
-    private Integer priceCents;
     private String notes;
 }

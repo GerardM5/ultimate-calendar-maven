@@ -19,5 +19,4 @@ public class CustomerRequestDTO {
     @Pattern(regexp = "^[+0-9\\s()-]{6,}$", message = "invalid phone format")
     private String phone;
 
-    private String notes;
 }

@@ -6,6 +6,9 @@ import java.time.OffsetDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class SlotDTO {
+
+    private StaffResponseDTO staff;
+
     // Rango en UTC (para guardar/reservar sin ambigüedades)
     private OffsetDateTime start; // [start, end)
     private OffsetDateTime end;
