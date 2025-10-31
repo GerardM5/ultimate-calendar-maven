@@ -46,14 +46,19 @@ public class AppointmentController {
     }
 
     @PostMapping
-    public ResponseEntity<AppointmentResponseDTO> create(@PathVariable UUID tenantId,
-                                                         @Validated @RequestBody AppointmentRequestDTO dto) {
+    public ResponseEntity<?> create(@PathVariable UUID tenantId,
+                                                         @Validated @RequestBody AppointmentRequestDTO dto)  {
         // fuerza coherencia tenant en DTO
         dto.setTenantId(tenantId);
-        Appointment saved = appointmentService.create(dto);
-        return ResponseEntity
-                .created(URI.create("/api/v1/tenants/%s/appointments/%s".formatted(tenantId, saved.getId())))
-                .body(appointmentMapper.toResponse(saved));
+        try {
+            Appointment saved = appointmentService.create(dto);
+            return ResponseEntity
+                    .created(URI.create("/api/v1/tenants/%s/appointments/%s".formatted(tenantId, saved.getId())))
+                    .body(appointmentMapper.toResponse(saved));
+        } catch (Exception e) {// ---- Error de conflicto semántico (409) y añado un mensaje ----
+            return ResponseEntity.status(409).body(e.getMessage());
+
+        }
     }
 
     @PatchMapping("/{id}/status")

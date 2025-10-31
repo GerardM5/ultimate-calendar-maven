@@ -45,7 +45,7 @@ public class AppointmentService {
                 .filter(a -> a.getTenant().getId().equals(tenantId));
     }
 
-    public Appointment create(AppointmentRequestDTO dto) {
+    public Appointment create(AppointmentRequestDTO dto) throws Exception {
         // 1) Cargar entidades y validar pertenencia al tenant
         UUID tenantId = Objects.requireNonNull(dto.getTenantId(), "tenantId is required");
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -77,6 +77,9 @@ public class AppointmentService {
         entity.setService(service);
         entity.setStaff(staff);
         entity.setCustomer(customer);
+        entity.setStartsAt(dto.getStartsAt());
+        entity.setEndsAt(dto.getStartsAt().plusMinutes(service.getDurationMin()));
+        entity.setPriceCents(service.getPriceCents());
         entity.setStatus(AppointmentStatus.valueOf("PENDING"));
 
         // (Opcional) 3) Validación previa de solape en memoria (rápida/optimista)
