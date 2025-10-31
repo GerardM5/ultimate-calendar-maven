@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.AvailabilityRequestDTO;
 import org.example.ultimatecalendarmaven.dto.DayAvailabilityDTO;
 import org.example.ultimatecalendarmaven.dto.SlotDTO;
+import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
 import org.example.ultimatecalendarmaven.model.*;
 import org.example.ultimatecalendarmaven.repository.*;
 import org.springframework.stereotype.Service;
@@ -74,7 +75,7 @@ public class AvailabilityService {
         // Unificar slots duplicados (mismo start/end) y ordenarlos
         Map<String, Range> unique = new HashMap<>();
         for (Range r : slotsAll) {
-            String key = r.start.toString() + ":" + r.end.toString();
+            String key = r.start + ":" + r.end + ":" + String.valueOf(r.staffId);
             unique.putIfAbsent(key, r);
         }
         List<Range> merged = unique.values().stream()
@@ -91,6 +92,7 @@ public class AvailabilityService {
                             .end(r.end)
                             .startLocal(sLocal.format(fmt))
                             .endLocal(eLocal.format(fmt))
+                            .staff(r.staffId != null ? StaffResponseDTO.builder().id(r.staffId).build() : null)
                             .build();
                 })
                 .toList();
@@ -111,7 +113,7 @@ public class AvailabilityService {
                 .map(w -> {
                     ZonedDateTime s = ZonedDateTime.of(day, w.getStartTime(), zone);
                     ZonedDateTime e = ZonedDateTime.of(day, w.getEndTime(), zone);
-                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime());
+                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime(), staff.getId());
                 })
                 .collect(Collectors.toList());
 
@@ -183,10 +185,18 @@ public class AvailabilityService {
     private static class Range {
         final OffsetDateTime start; // inclusivo
         final OffsetDateTime end;   // exclusivo idealmente
+        final UUID staffId;         // null cuando no aplica
         Range(OffsetDateTime start, OffsetDateTime end) {
             if (!start.isBefore(end)) throw new IllegalArgumentException("Invalid range");
             this.start = start;
             this.end = end;
+            this.staffId = null;
+        }
+        Range(OffsetDateTime start, OffsetDateTime end, UUID staffId) {
+            if (!start.isBefore(end)) throw new IllegalArgumentException("Invalid range");
+            this.start = start;
+            this.end = end;
+            this.staffId = staffId;
         }
         boolean overlaps(Range other) {
             return start.isBefore(other.end) && other.start.isBefore(end);
@@ -239,11 +249,11 @@ public class AvailabilityService {
         List<Range> out = new ArrayList<>();
         // izquierda
         if (r.start.isBefore(b.start)) {
-            out.add(new Range(r.start, min(r.end, b.start)));
+            out.add(new Range(r.start, min(r.end, b.start), r.staffId));
         }
         // derecha
         if (r.end.isAfter(b.end)) {
-            out.add(new Range(max(r.start, b.end), r.end));
+            out.add(new Range(max(r.start, b.end), r.end, r.staffId));
         }
         return out;
     }
@@ -254,7 +264,7 @@ public class AvailabilityService {
         for (Range r : free) {
             OffsetDateTime cur = r.start;
             while (!cur.plus(size).isAfter(r.end)) {
-                out.add(new Range(cur, cur.plus(size)));
+                out.add(new Range(cur, cur.plus(size), r.staffId));
                 cur = cur.plus(size);
             }
         }
