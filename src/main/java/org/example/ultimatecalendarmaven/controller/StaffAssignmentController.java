@@ -19,17 +19,17 @@ public class StaffAssignmentController {
     private final ServiceMapper serviceMapper;
 
     @PostMapping("/services/{serviceId}")
-    public ResponseEntity<Void> assign(@PathVariable UUID tenantId,
-                                       @PathVariable UUID staffId,
-                                       @PathVariable UUID serviceId) {
+    public ResponseEntity<Void> assign(@PathVariable("tenantId")UUID tenantId,
+                                       @PathVariable("staffId") UUID staffId,
+                                       @PathVariable("serviceId") UUID serviceId) {
         staffAssignmentService.assignService(tenantId, staffId, serviceId);
         return ResponseEntity.noContent().build(); // 204 idempotente
     }
 
     @DeleteMapping("/services/{serviceId}")
-    public ResponseEntity<Void> unassign(@PathVariable UUID tenantId,
-                                         @PathVariable UUID staffId,
-                                         @PathVariable UUID serviceId) {
+    public ResponseEntity<Void> unassign(@PathVariable("tenantId")UUID tenantId,
+                                         @PathVariable("staffId") UUID staffId,
+                                         @PathVariable("serviceId") UUID serviceId) {
         staffAssignmentService.unassignService(tenantId, staffId, serviceId);
         return ResponseEntity.noContent().build(); // 204 idempotente
     }
