@@ -14,6 +14,8 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 import org.example.ultimatecalendarmaven.repository.StaffServiceRepository;
 import org.example.ultimatecalendarmaven.model.StaffService;
@@ -72,27 +74,39 @@ public class AvailabilityService {
             }
         }
 
-        // Unificar slots duplicados (mismo start/end) y ordenarlos
-        Map<String, Range> unique = new HashMap<>();
+        // Agrupar por (start,end) y acumular el set de staff disponibles en ese slot
+        Map<String, Range> slotTimes = new HashMap<>();
+        Map<String, Set<UUID>> staffBySlot = new HashMap<>();
         for (Range r : slotsAll) {
-            String key = r.start + ":" + r.end + ":" + String.valueOf(r.staffId);
-            unique.putIfAbsent(key, r);
+            String key = r.start + ":" + r.end;
+            slotTimes.putIfAbsent(key, new Range(r.start, r.end));
+            staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staffId);
         }
-        List<Range> merged = unique.values().stream()
-                .sorted(Comparator.comparing((Range r) -> r.start).thenComparing(r -> r.end))
+
+        // Ordenar por start luego end
+        List<String> orderedKeys = slotTimes.entrySet().stream()
+                .sorted(Comparator.comparing((Map.Entry<String, Range> e) -> e.getValue().start)
+                        .thenComparing(e -> e.getValue().end))
+                .map(Map.Entry::getKey)
                 .toList();
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-        return merged.stream()
-                .map(r -> {
+        return orderedKeys.stream()
+                .map(key -> {
+                    Range r = slotTimes.get(key);
                     ZonedDateTime sLocal = r.start.atZoneSameInstant(zone);
                     ZonedDateTime eLocal = r.end.atZoneSameInstant(zone);
+
+                    Set<StaffResponseDTO> staffSet = staffBySlot.getOrDefault(key, Set.of()).stream()
+                            .map(id -> StaffResponseDTO.builder().id(id).build())
+                            .collect(Collectors.toCollection(LinkedHashSet::new));
+
                     return SlotDTO.builder()
                             .start(r.start)
                             .end(r.end)
                             .startLocal(sLocal.format(fmt))
                             .endLocal(eLocal.format(fmt))
-                            .staff(r.staffId != null ? StaffResponseDTO.builder().id(r.staffId).build() : null)
+                            .staff(staffSet)
                             .build();
                 })
                 .toList();

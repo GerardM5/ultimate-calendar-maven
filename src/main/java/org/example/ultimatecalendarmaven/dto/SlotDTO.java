@@ -3,12 +3,13 @@ package org.example.ultimatecalendarmaven.dto;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class SlotDTO {
 
-    private StaffResponseDTO staff;
+    private Set<StaffResponseDTO> staff;
 
     // Rango en UTC (para guardar/reservar sin ambigüedades)
     private OffsetDateTime start; // [start, end)
