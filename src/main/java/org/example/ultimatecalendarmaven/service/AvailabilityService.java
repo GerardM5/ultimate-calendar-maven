@@ -69,9 +69,52 @@ public class AvailabilityService {
                     .filter(s -> s.getTenant() != null && tenant.getId().equals(s.getTenant().getId()))
                     .toList();
 
+            Map<UUID, String> staffNames = candidates.stream()
+                    .collect(Collectors.toMap(Staff::getId, Staff::getName));
+
             for (Staff s : candidates) {
                 slotsAll.addAll(computeSlotsForStaff(tenant, service, s, day));
             }
+
+            // Agrupar por (start,end) y acumular el set de staff disponibles en ese slot
+            Map<String, Range> slotTimes = new HashMap<>();
+            Map<String, Set<UUID>> staffBySlot = new HashMap<>();
+            for (Range r : slotsAll) {
+                String key = r.start + ":" + r.end;
+                slotTimes.putIfAbsent(key, new Range(r.start, r.end));
+                staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staffId);
+            }
+
+            // Ordenar por start luego end
+            List<String> orderedKeys = slotTimes.entrySet().stream()
+                    .sorted(Comparator.comparing((Map.Entry<String, Range> e) -> e.getValue().start)
+                            .thenComparing(e -> e.getValue().end))
+                    .map(Map.Entry::getKey)
+                    .toList();
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+            return orderedKeys.stream()
+                    .map(key -> {
+                        Range r = slotTimes.get(key);
+                        ZonedDateTime sLocal = r.start.atZoneSameInstant(zone);
+                        ZonedDateTime eLocal = r.end.atZoneSameInstant(zone);
+
+                        Set<StaffResponseDTO> staffSet = staffBySlot.getOrDefault(key, Set.of()).stream()
+                                .map(id -> StaffResponseDTO.builder()
+                                        .id(id)
+                                        .name(staffNames.get(id))
+                                        .build())
+                                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                        return SlotDTO.builder()
+                                .start(r.start)
+                                .end(r.end)
+                                .startLocal(sLocal.format(fmt))
+                                .endLocal(eLocal.format(fmt))
+                                .staff(staffSet)
+                                .build();
+                    })
+                    .toList();
         }
 
         // Agrupar por (start,end) y acumular el set de staff disponibles en ese slot
