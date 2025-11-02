@@ -158,8 +158,16 @@ public class AvailabilityService {
     private List<Range> computeSlotsForStaff(Tenant tenant, ServiceEntity service, Staff staff, LocalDate day) {
         ZoneId zone = ZoneId.of(tenant.getTimezone());
 
+
         ZonedDateTime dayStartLocal = day.atStartOfDay(zone);
         ZonedDateTime dayEndLocal = day.plusDays(1).atStartOfDay(zone);
+
+        // comprueba si daystartLocal es mas temprano que ahora mismo en la zona del tenant
+        ZonedDateTime nowInTenantZone = ZonedDateTime.now(zone);
+        if (dayStartLocal.isBefore(nowInTenantZone)) {
+            dayStartLocal = nowInTenantZone;
+        }
+
         OffsetDateTime fromUtc = dayStartLocal.toOffsetDateTime();
         OffsetDateTime toUtc = dayEndLocal.toOffsetDateTime();
 
@@ -196,6 +204,9 @@ public class AvailabilityService {
         }
         if (to.isBefore(from)) {
             throw new IllegalArgumentException("'to' must be on or after 'from'");
+        }
+        if (from.isBefore(OffsetDateTime.now())){
+            from = OffsetDateTime.now();
         }
 
         // Reutilizamos validaciones básicas cargando tenant/service/staff solo una vez
