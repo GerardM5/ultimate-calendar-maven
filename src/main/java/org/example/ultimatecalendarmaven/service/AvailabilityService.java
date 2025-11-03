@@ -82,7 +82,7 @@ public class AvailabilityService {
             for (Range r : slotsAll) {
                 String key = r.start + ":" + r.end;
                 slotTimes.putIfAbsent(key, new Range(r.start, r.end));
-                staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staffId);
+                staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staff.getId());
             }
 
             // Ordenar por start luego end
@@ -119,11 +119,11 @@ public class AvailabilityService {
 
         // Agrupar por (start,end) y acumular el set de staff disponibles en ese slot
         Map<String, Range> slotTimes = new HashMap<>();
-        Map<String, Set<UUID>> staffBySlot = new HashMap<>();
+        Map<String, Set<Staff>> staffBySlot = new HashMap<>();
         for (Range r : slotsAll) {
             String key = r.start + ":" + r.end;
             slotTimes.putIfAbsent(key, new Range(r.start, r.end));
-            staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staffId);
+            staffBySlot.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(r.staff);
         }
 
         // Ordenar por start luego end
@@ -141,7 +141,7 @@ public class AvailabilityService {
                     ZonedDateTime eLocal = r.end.atZoneSameInstant(zone);
 
                     Set<StaffResponseDTO> staffSet = staffBySlot.getOrDefault(key, Set.of()).stream()
-                            .map(id -> StaffResponseDTO.builder().id(id).build())
+                            .map(staff -> StaffResponseDTO.builder().id(staff.getId()).name(staff.getName()).build())
                             .collect(Collectors.toCollection(LinkedHashSet::new));
 
                     return SlotDTO.builder()
@@ -178,7 +178,7 @@ public class AvailabilityService {
                 .map(w -> {
                     ZonedDateTime s = ZonedDateTime.of(day, w.getStartTime(), zone);
                     ZonedDateTime e = ZonedDateTime.of(day, w.getEndTime(), zone);
-                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime(), staff.getId());
+                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime(), staff);
                 })
                 .collect(Collectors.toList());
 
@@ -253,18 +253,18 @@ public class AvailabilityService {
     private static class Range {
         final OffsetDateTime start; // inclusivo
         final OffsetDateTime end;   // exclusivo idealmente
-        final UUID staffId;         // null cuando no aplica
+        final Staff staff;         // null cuando no aplica
         Range(OffsetDateTime start, OffsetDateTime end) {
             if (!start.isBefore(end)) throw new IllegalArgumentException("Invalid range");
             this.start = start;
             this.end = end;
-            this.staffId = null;
+            this.staff = null;
         }
-        Range(OffsetDateTime start, OffsetDateTime end, UUID staffId) {
+        Range(OffsetDateTime start, OffsetDateTime end, Staff staff) {
             if (!start.isBefore(end)) throw new IllegalArgumentException("Invalid range");
             this.start = start;
             this.end = end;
-            this.staffId = staffId;
+            this.staff = staff;
         }
         boolean overlaps(Range other) {
             return start.isBefore(other.end) && other.start.isBefore(end);
@@ -317,11 +317,11 @@ public class AvailabilityService {
         List<Range> out = new ArrayList<>();
         // izquierda
         if (r.start.isBefore(b.start)) {
-            out.add(new Range(r.start, min(r.end, b.start), r.staffId));
+            out.add(new Range(r.start, min(r.end, b.start), r.staff));
         }
         // derecha
         if (r.end.isAfter(b.end)) {
-            out.add(new Range(max(r.start, b.end), r.end, r.staffId));
+            out.add(new Range(max(r.start, b.end), r.end, r.staff));
         }
         return out;
     }
@@ -332,7 +332,7 @@ public class AvailabilityService {
         for (Range r : free) {
             OffsetDateTime cur = r.start;
             while (!cur.plus(size).isAfter(r.end)) {
-                out.add(new Range(cur, cur.plus(size), r.staffId));
+                out.add(new Range(cur, cur.plus(size), r.staff));
                 cur = cur.plus(size);
             }
         }
