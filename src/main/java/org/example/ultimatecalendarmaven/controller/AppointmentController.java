@@ -47,7 +47,7 @@ public class AppointmentController {
 
     @PostMapping
     public ResponseEntity<?> create(@PathVariable UUID tenantId,
-                                                         @Validated @RequestBody AppointmentRequestDTO dto)  {
+                                    @Validated @RequestBody AppointmentRequestDTO dto)  {
         // fuerza coherencia tenant en DTO
         dto.setTenantId(tenantId);
         try {

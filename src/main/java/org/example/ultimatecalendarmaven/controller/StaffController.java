@@ -6,6 +6,7 @@ import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.StaffMapper;
 import org.example.ultimatecalendarmaven.service.StaffService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +36,7 @@ public class StaffController {
     }
 
     @PostMapping
-    public ResponseEntity<StaffResponseDTO> create(@RequestBody StaffRequestDTO staff) {
+    public ResponseEntity<?> create(@Validated @RequestBody StaffRequestDTO staff) {
         var saved = staffService.create(staff);
         return ResponseEntity.created(URI.create("/api/v1/staff/" + saved.getId()))
                 .body(staffMapper.toResponse(saved));
