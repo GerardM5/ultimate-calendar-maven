@@ -11,10 +11,9 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AppointmentSummaryDTO {
     private UUID id;
-    private UUID staffId;
-    private UUID customerId;
+    private StaffResponseDTO staff;
+    private CustomerResponseDTO customer;
+    private ServiceResponseDTO service;
     private OffsetDateTime startsAt;
     private OffsetDateTime endsAt;
-    private String staffName;
-    private String customerName;
 }

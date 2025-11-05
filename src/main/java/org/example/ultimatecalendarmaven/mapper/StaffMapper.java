@@ -9,7 +9,7 @@ import org.mapstruct.*;
 public interface StaffMapper {
 
     // entity -> response
-    @Mapping(target = "tenantId", source = "tenant.id")
+    //@Mapping(target = "tenantId", source = "tenant.id")
     StaffResponseDTO toResponse(Staff staff);
 
     // request -> entity (NO seteamos tenant aquí; lo resuelve el service)

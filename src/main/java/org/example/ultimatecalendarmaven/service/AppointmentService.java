@@ -30,13 +30,9 @@ public class AppointmentService {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
 
-        // consulta simple: si no hay rango, devolvemos las últimas N (puedes paginar más adelante)
-        List<Appointment> all = appointmentRepository.findByTenantAndRangeEager(tenantId,from, to);
-        return all.stream()
-                .filter(a -> a.getTenant().getId().equals(tenant.getId()))
-                .filter(a -> from == null || !a.getEndsAt().isBefore(from))
-                .filter(a -> to == null || !a.getStartsAt().isAfter(to))
-                .toList();
+        List<Appointment> appointments = appointmentRepository.findByTenantAndStartsAtBetweenOrderByStartsAtAsc(tenant,from, to);
+
+        return appointments;
     }
 
     @Transactional(readOnly = true)

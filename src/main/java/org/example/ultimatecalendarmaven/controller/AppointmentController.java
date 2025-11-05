@@ -32,8 +32,7 @@ public class AppointmentController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to
     ) {
-        List<Appointment> data = appointmentService.findByTenantAndRange(tenantId, from, to);
-        return appointmentMapper.toSummaryList(data);
+        return appointmentMapper.toSummaryList(appointmentService.findByTenantAndRange(tenantId, from, to));
     }
 
     @GetMapping("/{id}")
