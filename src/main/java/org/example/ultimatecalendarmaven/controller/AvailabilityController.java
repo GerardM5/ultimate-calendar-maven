@@ -25,13 +25,13 @@ public class AvailabilityController {
             @PathVariable UUID tenantId,
             @RequestParam UUID serviceId,
             @RequestParam(required = false) UUID staffId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from
     ) {
         var req = AvailabilityRequestDTO.builder()
                 .tenantId(tenantId)
                 .serviceId(serviceId)
                 .staffId(staffId)
-                .day(day)
+                .from(from)
                 .build();
         return availabilityService.getAvailability(req);
     }

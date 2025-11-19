@@ -8,7 +8,7 @@ import java.util.UUID;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class WorkingHoursRequestDTO {
     @NotNull private UUID staffId;        // pertenece al tenant del path
-    @Min(0) @Max(6) private int weekday;  // 0=domingo ... 6=sábado
+    @Min(1) @Max(7) private int weekday;  // 1=lunes ... 7=domingo
     @NotNull private LocalTime startTime; // hora local del tenant
     @NotNull private LocalTime endTime;
 

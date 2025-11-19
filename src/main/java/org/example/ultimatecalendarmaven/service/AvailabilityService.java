@@ -46,7 +46,10 @@ public class AvailabilityService {
             throw new IllegalArgumentException("Service not in tenant");
         }
 
-        LocalDate day = req.getDay();
+        OffsetDateTime from = req.getFrom();
+        if (from == null || from.isBefore(OffsetDateTime.now())) {
+            from = OffsetDateTime.now();
+        }
         ZoneId zone = ZoneId.of(tenant.getTimezone());
 
         List<Range> slotsAll = new ArrayList<>();
@@ -59,7 +62,7 @@ public class AvailabilityService {
             if (!staff.getTenant().getId().equals(tenant.getId())) {
                 throw new IllegalArgumentException("Staff not in tenant");
             }
-            slotsAll.addAll(computeSlotsForStaff(tenant, service, staff, day));
+            slotsAll.addAll(computeSlotsForStaff(tenant, service, staff, from));
         } else {
             // Modo: todos los staff que pueden hacer este servicio en este tenant
             List<Staff> candidates = staffServiceRepository.findByService(service).stream()
@@ -73,7 +76,7 @@ public class AvailabilityService {
                     .collect(Collectors.toMap(Staff::getId, Staff::getName));
 
             for (Staff s : candidates) {
-                slotsAll.addAll(computeSlotsForStaff(tenant, service, s, day));
+                slotsAll.addAll(computeSlotsForStaff(tenant, service, s, from));
             }
 
             // Agrupar por (start,end) y acumular el set de staff disponibles en ese slot
@@ -155,40 +158,44 @@ public class AvailabilityService {
                 .toList();
     }
 
-    private List<Range> computeSlotsForStaff(Tenant tenant, ServiceEntity service, Staff staff, LocalDate day) {
-        ZoneId zone = ZoneId.of(tenant.getTimezone());
+    private List<Range> computeSlotsForStaff(Tenant tenant, ServiceEntity service, Staff staff, OffsetDateTime from) {
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime startOfDay = from.toLocalDate().atStartOfDay().atOffset(from.getOffset());
 
+        OffsetDateTime endOfDay = startOfDay.plusDays(1);
 
-        ZonedDateTime dayStartLocal = day.atStartOfDay(zone);
-        ZonedDateTime dayEndLocal = day.plusDays(1).atStartOfDay(zone);
-
-        // comprueba si daystartLocal es mas temprano que ahora mismo en la zona del tenant
-        ZonedDateTime nowInTenantZone = ZonedDateTime.now(zone);
-        if (dayStartLocal.isBefore(nowInTenantZone)) {
-            dayStartLocal = nowInTenantZone;
-        }
-
-        OffsetDateTime fromUtc = dayStartLocal.toOffsetDateTime();
-        OffsetDateTime toUtc = dayEndLocal.toOffsetDateTime();
-
-        int weekdayCode = day.getDayOfWeek().getValue(); // 1=Monday ... 7=Sunday
+        int weekdayCode = from.getDayOfWeek().getValue(); // 1 = Monday ... 7 = Sunday
         List<WorkingHours> wh = workingHoursRepository.findByStaffAndWeekdayOrderByStartTimeAsc(staff, weekdayCode);
 
+        // construimos los rangos base solo con OffsetDateTime (sin ZoneId)
         List<Range> base = wh.stream()
+                .filter(w -> w.getEndTime().isAfter(from.toLocalTime())) // descartar horarios ya pasados hoy
                 .map(w -> {
-                    ZonedDateTime s = ZonedDateTime.of(day, w.getStartTime(), zone);
-                    ZonedDateTime e = ZonedDateTime.of(day, w.getEndTime(), zone);
-                    return new Range(s.toOffsetDateTime(), e.toOffsetDateTime(), staff);
+                    OffsetDateTime s = OffsetDateTime.of(
+                            from.toLocalDate(),
+                            w.getStartTime(),
+                            from.getOffset()
+                    );
+                    OffsetDateTime e = OffsetDateTime.of(
+                            from.toLocalDate(),
+                            w.getEndTime(),
+                            from.getOffset()
+                    );
+                    return new Range(s, e, staff);
                 })
                 .collect(Collectors.toList());
 
         List<Range> blockers = new ArrayList<>();
-        timeOffRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, toUtc, fromUtc)
+        timeOffRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, endOfDay, startOfDay)
                 .forEach(t -> blockers.add(new Range(t.getStartsAt(), t.getEndsAt())));
-        resourceLockRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, toUtc, fromUtc)
+        resourceLockRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, endOfDay, startOfDay)
                 .forEach(r -> blockers.add(new Range(r.getStartsAt(), r.getEndsAt())));
-        appointmentRepository.findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(staff, toUtc, fromUtc)
+        appointmentRepository.findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(staff, endOfDay, startOfDay)
                 .forEach(a -> blockers.add(new Range(a.getStartsAt(), a.getEndsAt())));
+        // Añadir a bloquers las horas pasadas
+        if (startOfDay.isBefore(now)) {
+            blockers.add(new Range(startOfDay, now));
+        }
 
         List<Range> free = subtractAll(base, merge(blockers));
         int minutes = service.getDurationMin() + service.getBufferBefore() + service.getBufferAfter();
@@ -228,20 +235,20 @@ public class AvailabilityService {
 
         List<DayAvailabilityDTO> result = new ArrayList<>();
 
-        for (OffsetDateTime d = from; !d.isAfter(to); d = d.plusDays(1)) {
+        for (OffsetDateTime f = from; !f.isAfter(to); f = f.plusDays(1)) {
             // construimos el request del día
             var req = AvailabilityRequestDTO.builder()
                     .tenantId(tenantId)
                     .serviceId(serviceId)
                     .staffId(staffId)
-                    .day(d.toLocalDate())
+                    .from(f)
                     .build();
 
             // Si hay al menos un slot -> available=true
             boolean available = !getAvailability(req).isEmpty();
 
             result.add(DayAvailabilityDTO.builder()
-                    .date(d)
+                    .date(f)
                     .available(available)
                     .build());
         }
