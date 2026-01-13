@@ -12,4 +12,5 @@ public class StaffResponseDTO {
     private String email;
     private String phone;
     private String color;
+    private String avatarUrl;
 }

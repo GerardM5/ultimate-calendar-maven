@@ -17,6 +17,7 @@ public class StaffRequestDTO {
     private String email;
     private String phone;
     private String color;
+    private String avatarUrl;
     @Builder.Default
     private Boolean active = true;
 }

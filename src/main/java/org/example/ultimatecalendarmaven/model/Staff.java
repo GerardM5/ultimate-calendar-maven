@@ -27,6 +27,7 @@ public class Staff {
     private String phone;
 
     private String color;
+    private String avatarUrl;
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
