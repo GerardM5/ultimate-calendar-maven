@@ -9,13 +9,16 @@ import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = { StaffMapper.class })
 public interface StaffScheduleMapper {
 
     StaffSchedule toEntity(StaffScheduleRequestDTO staffScheduleRequestDTO);
 
     List<StaffSchedule> toEntity(List<StaffScheduleRequestDTO> dtos);
+    @Mapping(target = "id", expression = "java(staffSchedule.getId() != null ? staffSchedule.getId().toString() : null)")
     StaffScheduleResponseDTO toResponse(StaffSchedule staffSchedule);
+
+    List<StaffScheduleResponseDTO> toResponse(List<StaffSchedule> entities);
 
 
 }

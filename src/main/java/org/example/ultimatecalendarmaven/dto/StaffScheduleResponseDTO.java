@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 public class StaffScheduleResponseDTO {
 
     private String id;
-    private String staffId;
+    private StaffResponseDTO staff;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
 }
