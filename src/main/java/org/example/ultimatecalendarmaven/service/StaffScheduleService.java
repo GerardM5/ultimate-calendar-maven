@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,10 +22,8 @@ public class StaffScheduleService {
 
     @Autowired
     private final StaffScheduleRepository repository;
-
     @Autowired
     final StaffScheduleMapper mapper;
-
     @Autowired StaffService staffService;
 
 
@@ -49,5 +48,9 @@ public class StaffScheduleService {
         return repository.findByStaff(staff).stream()
                 .map(mapper::toResponse)
                 .toList();
+    }
+
+    public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate){
+        return repository.findByStaffAndRangeDate(staffId, startDate, endDate);
     }
 }

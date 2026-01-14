@@ -28,9 +28,7 @@ public class AvailabilityService {
     private final TenantRepository tenantRepository;
     private final ServiceRepository serviceRepository;
     private final StaffRepository staffRepository;
-    private final WorkingHoursRepository workingHoursRepository;
-    private final TimeOffRepository timeOffRepository;
-    private final ResourceLockRepository resourceLockRepository;
+    private final StaffScheduleService staffScheduleService;
     private final AppointmentRepository appointmentRepository;
     private final StaffServiceRepository staffServiceRepository;
 
@@ -159,37 +157,24 @@ public class AvailabilityService {
     }
 
     private List<Range> computeSlotsForStaff(Tenant tenant, ServiceEntity service, Staff staff, OffsetDateTime from) {
-        OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime startOfDay = from.toLocalDate().atStartOfDay().atOffset(from.getOffset());
 
+        OffsetDateTime now = OffsetDateTime.now();
+
+        OffsetDateTime startOfDay = from.toLocalDate().atStartOfDay().atOffset(from.getOffset());
         OffsetDateTime endOfDay = startOfDay.plusDays(1);
 
-        int weekdayCode = from.getDayOfWeek().getValue(); // 1 = Monday ... 7 = Sunday
-        List<WorkingHours> wh = workingHoursRepository.findByStaffAndWeekdayOrderByStartTimeAsc(staff, weekdayCode);
+        List<StaffSchedule> schedules = staffScheduleService.getScheduleByStaffAndRangeDates(
+                staff.getId(), startOfDay, endOfDay);
+
+        //TODO orden al reves para mejorar logica?
 
         // construimos los rangos base solo con OffsetDateTime (sin ZoneId)
-        List<Range> base = wh.stream()
-                .filter(w -> w.getEndTime().isAfter(from.toLocalTime())) // descartar horarios ya pasados hoy
-                .map(w -> {
-                    OffsetDateTime s = OffsetDateTime.of(
-                            from.toLocalDate(),
-                            w.getStartTime(),
-                            from.getOffset()
-                    );
-                    OffsetDateTime e = OffsetDateTime.of(
-                            from.toLocalDate(),
-                            w.getEndTime(),
-                            from.getOffset()
-                    );
-                    return new Range(s, e, staff);
-                })
-                .collect(Collectors.toList());
+        List<Range> base = schedules.stream()
+                .filter(s -> s.getEndTime().isAfter(from)) // descartar horarios ya pasados hoy
+                .map(s ->  new Range(s.getStartTime(), s.getEndTime(), staff))
+                .toList();
 
         List<Range> blockers = new ArrayList<>();
-        timeOffRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, endOfDay, startOfDay)
-                .forEach(t -> blockers.add(new Range(t.getStartsAt(), t.getEndsAt())));
-        resourceLockRepository.findByStaffAndStartsAtLessThanEqualAndEndsAtGreaterThanEqual(staff, endOfDay, startOfDay)
-                .forEach(r -> blockers.add(new Range(r.getStartsAt(), r.getEndsAt())));
         appointmentRepository.findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(staff, endOfDay, startOfDay)
                 .forEach(a -> blockers.add(new Range(a.getStartsAt(), a.getEndsAt())));
         // Añadir a bloquers las horas pasadas
