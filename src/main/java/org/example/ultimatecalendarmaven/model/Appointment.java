@@ -38,8 +38,7 @@ public class Appointment {
     private Customer customer;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
-    @Column(name = "status", columnDefinition = "appointment_status", nullable = false)
+    @Column(name = "status", nullable = false)
     private AppointmentStatus status;
 
     @Column(name = "starts_at", nullable = false)
