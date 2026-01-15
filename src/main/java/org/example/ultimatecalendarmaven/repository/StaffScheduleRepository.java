@@ -3,6 +3,8 @@ package org.example.ultimatecalendarmaven.repository;
 import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.model.StaffSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
@@ -14,5 +16,16 @@ public interface StaffScheduleRepository extends JpaRepository<StaffSchedule, UU
 
     List<StaffSchedule> findByStaff(Staff staff);
 
-    List<StaffSchedule> findByStaffAndRangeDate(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate);
+    @Query("""
+  select s
+  from StaffSchedule s
+  where s.staff.id = :staffId
+    and s.startTime <= :end
+    and s.endTime >= :start
+""")
+    List<StaffSchedule> findOverlapping(
+            @Param("staffId") UUID staffId,
+            @Param("start") OffsetDateTime start,
+            @Param("end") OffsetDateTime end
+    );
 }

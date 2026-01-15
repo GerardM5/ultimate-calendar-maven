@@ -51,6 +51,6 @@ public class StaffScheduleService {
     }
 
     public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate){
-        return repository.findByStaffAndRangeDate(staffId, startDate, endDate);
+        return repository.findOverlapping(staffId, startDate, endDate);
     }
 }
