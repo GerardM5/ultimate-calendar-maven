@@ -1045,9 +1045,11 @@ components:
           description: Staff member name
         email:
           type: string
+          format: email
           description: Staff member email
         phone:
           type: string
+          pattern: '^[+0-9\s()-]{6,}$'
           description: Staff member phone
         color:
           type: string
@@ -1073,8 +1075,10 @@ components:
           type: string
         email:
           type: string
+          format: email
         phone:
           type: string
+          pattern: '^[+0-9\s()-]{6,}$'
         color:
           type: string
         avatarUrl:
