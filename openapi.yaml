@@ -1,0 +1,1385 @@
+openapi: 3.0.3
+info:
+  title: Ultimate Calendar API
+  description: API for managing tenants, staff, services, appointments, and availability in a calendar system
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Tenants
+    description: Tenant management operations
+  - name: Customers
+    description: Customer management operations (tenant-scoped)
+  - name: Services
+    description: Service catalog management
+  - name: Staff
+    description: Staff member management
+  - name: Appointments
+    description: Appointment scheduling and management
+  - name: Availability
+    description: Check service and staff availability
+  - name: Staff Assignments
+    description: Assign services to staff members
+  - name: Staff Schedules
+    description: Manage staff schedules
+  - name: Working Hours
+    description: Manage staff working hours
+  - name: Time Off
+    description: Manage staff time off periods
+
+paths:
+  # ===========================
+  # Tenant Endpoints
+  # ===========================
+  /api/v1/tenants:
+    get:
+      tags:
+        - Tenants
+      summary: List all tenants
+      operationId: listTenants
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantResponse'
+    post:
+      tags:
+        - Tenants
+      summary: Create a new tenant
+      operationId: createTenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+      responses:
+        '201':
+          description: Tenant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/tenants/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParameter'
+    get:
+      tags:
+        - Tenants
+      summary: Get a tenant by ID
+      operationId: getTenant
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Tenants
+      summary: Update a tenant
+      operationId: updateTenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+      responses:
+        '200':
+          description: Tenant updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Tenants
+      summary: Delete a tenant
+      operationId: deleteTenant
+      responses:
+        '204':
+          description: Tenant deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Customer Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/customers:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Customers
+      summary: List all customers for a tenant
+      operationId: listCustomers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerResponse'
+    post:
+      tags:
+        - Customers
+      summary: Create a new customer
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRequest'
+      responses:
+        '201':
+          description: Customer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/tenants/{tenantId}/customers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/IdParameter'
+    get:
+      tags:
+        - Customers
+      summary: Get a customer by ID
+      operationId: getCustomer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Customers
+      summary: Update a customer
+      operationId: updateCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRequest'
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Customers
+      summary: Delete a customer
+      operationId: deleteCustomer
+      responses:
+        '204':
+          description: Customer deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Service Endpoints
+  # ===========================
+  /api/v1/services:
+    post:
+      tags:
+        - Services
+      summary: Create a new service
+      operationId: createService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+      responses:
+        '201':
+          description: Service created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/services/tenant/{tenantId}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Services
+      summary: List all services for a tenant
+      operationId: listServices
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceResponse'
+
+  /api/v1/services/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParameter'
+    get:
+      tags:
+        - Services
+      summary: Get a service by ID
+      operationId: getService
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Services
+      summary: Update a service
+      operationId: updateService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+      responses:
+        '200':
+          description: Service updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Services
+      summary: Delete a service
+      operationId: deleteService
+      responses:
+        '204':
+          description: Service deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Staff Endpoints
+  # ===========================
+  /api/v1/staff:
+    post:
+      tags:
+        - Staff
+      summary: Create a new staff member
+      operationId: createStaff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffRequest'
+      responses:
+        '201':
+          description: Staff member created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/staff/tenant/{tenantId}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Staff
+      summary: List all staff members for a tenant
+      operationId: listStaffByTenant
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffResponse'
+
+  /api/v1/staff/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParameter'
+    get:
+      tags:
+        - Staff
+      summary: Get a staff member by ID
+      operationId: getStaff
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Staff
+      summary: Update a staff member
+      operationId: updateStaff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffRequest'
+      responses:
+        '200':
+          description: Staff member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Staff
+      summary: Delete a staff member
+      operationId: deleteStaff
+      responses:
+        '204':
+          description: Staff member deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Appointment Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/appointments:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Appointments
+      summary: List appointments for a tenant
+      operationId: listAppointments
+      parameters:
+        - name: from
+          in: query
+          description: Start datetime for filtering appointments (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End datetime for filtering appointments (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppointmentSummary'
+    post:
+      tags:
+        - Appointments
+      summary: Create a new appointment
+      operationId: createAppointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentRequest'
+      responses:
+        '201':
+          description: Appointment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Conflict - Appointment time slot not available
+          content:
+            application/json:
+              schema:
+                type: string
+
+  /api/v1/tenants/{tenantId}/appointments/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/IdParameter'
+    get:
+      tags:
+        - Appointments
+      summary: Get an appointment by ID
+      operationId: getAppointment
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Appointments
+      summary: Delete an appointment
+      operationId: deleteAppointment
+      responses:
+        '204':
+          description: Appointment deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tenants/{tenantId}/appointments/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/IdParameter'
+    patch:
+      tags:
+        - Appointments
+      summary: Update appointment status
+      operationId: updateAppointmentStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentStatusUpdate'
+      responses:
+        '200':
+          description: Appointment status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Availability Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/availability:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Availability
+      summary: Get available time slots
+      operationId: getAvailability
+      parameters:
+        - name: serviceId
+          in: query
+          required: true
+          description: Service ID to check availability for
+          schema:
+            type: string
+            format: uuid
+        - name: staffId
+          in: query
+          required: false
+          description: Staff ID to check availability for (optional)
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          description: Start datetime (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Slot'
+
+  /api/v1/tenants/{tenantId}/availability/days:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    get:
+      tags:
+        - Availability
+      summary: Get availability by day
+      operationId: getAvailabilityByDay
+      parameters:
+        - name: serviceId
+          in: query
+          required: true
+          description: Service ID to check availability for
+          schema:
+            type: string
+            format: uuid
+        - name: staffId
+          in: query
+          required: false
+          description: Staff ID to check availability for (optional)
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          description: Start datetime (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          description: End datetime (ISO 8601 format)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DayAvailability'
+
+  # ===========================
+  # Staff Assignment Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/staff/{staffId}/services:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/StaffIdParameter'
+    get:
+      tags:
+        - Staff Assignments
+      summary: List services assigned to a staff member
+      operationId: listStaffServices
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceResponse'
+
+  /api/v1/tenants/{tenantId}/staff/{staffId}/services/{serviceId}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/StaffIdParameter'
+      - $ref: '#/components/parameters/ServiceIdParameter'
+    post:
+      tags:
+        - Staff Assignments
+      summary: Assign a service to a staff member
+      operationId: assignService
+      responses:
+        '204':
+          description: Service assigned successfully
+    delete:
+      tags:
+        - Staff Assignments
+      summary: Unassign a service from a staff member
+      operationId: unassignService
+      responses:
+        '204':
+          description: Service unassigned successfully
+
+  # ===========================
+  # Staff Schedule Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/staff/{staffId}/schedule:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/StaffIdParameter'
+    get:
+      tags:
+        - Staff Schedules
+      summary: List schedules for a staff member
+      operationId: listStaffSchedules
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffScheduleResponse'
+    post:
+      tags:
+        - Staff Schedules
+      summary: Assign schedules to a staff member
+      operationId: assignSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/StaffScheduleRequest'
+      responses:
+        '204':
+          description: Schedules assigned successfully
+
+  # ===========================
+  # Working Hours Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/staff/{staffId}/working-hours:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/StaffIdParameter'
+    get:
+      tags:
+        - Working Hours
+      summary: List working hours for a staff member
+      operationId: listWorkingHours
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkingHoursResponse'
+
+  /api/v1/tenants/{tenantId}/working-hours:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    post:
+      tags:
+        - Working Hours
+      summary: Create working hours for a staff member
+      operationId: createWorkingHours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkingHoursRequest'
+      responses:
+        '201':
+          description: Working hours created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/tenants/{tenantId}/working-hours/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/IdParameter'
+    put:
+      tags:
+        - Working Hours
+      summary: Update working hours
+      operationId: updateWorkingHours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkingHoursRequest'
+      responses:
+        '200':
+          description: Working hours updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Working Hours
+      summary: Delete working hours
+      operationId: deleteWorkingHours
+      responses:
+        '204':
+          description: Working hours deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===========================
+  # Time Off Endpoints
+  # ===========================
+  /api/v1/tenants/{tenantId}/staff/{staffId}/time-off:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/StaffIdParameter'
+    get:
+      tags:
+        - Time Off
+      summary: List time off periods for a staff member
+      operationId: listTimeOff
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeOffResponse'
+
+  /api/v1/tenants/{tenantId}/time-off:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+    post:
+      tags:
+        - Time Off
+      summary: Create a time off period
+      operationId: createTimeOff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeOffRequest'
+      responses:
+        '201':
+          description: Time off created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeOffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/tenants/{tenantId}/time-off/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TenantIdParameter'
+      - $ref: '#/components/parameters/IdParameter'
+    put:
+      tags:
+        - Time Off
+      summary: Update a time off period
+      operationId: updateTimeOff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeOffRequest'
+      responses:
+        '200':
+          description: Time off updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeOffResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Time Off
+      summary: Delete a time off period
+      operationId: deleteTimeOff
+      responses:
+        '204':
+          description: Time off deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    TenantIdParameter:
+      name: tenantId
+      in: path
+      required: true
+      description: Tenant ID
+      schema:
+        type: string
+        format: uuid
+
+    StaffIdParameter:
+      name: staffId
+      in: path
+      required: true
+      description: Staff ID
+      schema:
+        type: string
+        format: uuid
+
+    ServiceIdParameter:
+      name: serviceId
+      in: path
+      required: true
+      description: Service ID
+      schema:
+        type: string
+        format: uuid
+
+    IdParameter:
+      name: id
+      in: path
+      required: true
+      description: Resource ID
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # ===========================
+    # Tenant Schemas
+    # ===========================
+    TenantRequest:
+      type: object
+      required:
+        - name
+        - slug
+      properties:
+        name:
+          type: string
+          description: Tenant name
+        slug:
+          type: string
+          description: URL-friendly tenant identifier
+        timezone:
+          type: string
+          description: Timezone (default Europe/Madrid)
+          default: Europe/Madrid
+          example: Europe/Madrid
+
+    TenantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        timezone:
+          type: string
+
+    # ===========================
+    # Customer Schemas
+    # ===========================
+    CustomerRequest:
+      type: object
+      required:
+        - tenantId
+        - name
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+          description: Tenant ID (enforced from path)
+        name:
+          type: string
+          description: Customer name
+        email:
+          type: string
+          format: email
+          description: Customer email
+        phone:
+          type: string
+          pattern: '^[+0-9\s()-]{6,}$'
+          description: Customer phone number
+
+    CustomerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    # ===========================
+    # Service Schemas
+    # ===========================
+    ServiceRequest:
+      type: object
+      required:
+        - tenantId
+        - name
+        - durationMin
+        - priceCents
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Service name
+        description:
+          type: string
+          description: Service description
+        imageUrl:
+          type: string
+          description: Service image URL
+        durationMin:
+          type: integer
+          minimum: 1
+          description: Service duration in minutes
+        priceCents:
+          type: integer
+          minimum: 0
+          description: Service price in cents
+        bufferBefore:
+          type: integer
+          minimum: 0
+          description: Buffer time before appointment in minutes
+        bufferAfter:
+          type: integer
+          minimum: 0
+          description: Buffer time after appointment in minutes
+        active:
+          type: boolean
+          default: true
+          description: Whether the service is active
+
+    ServiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        durationMin:
+          type: integer
+        priceCents:
+          type: integer
+        bufferBefore:
+          type: integer
+        bufferAfter:
+          type: integer
+        active:
+          type: boolean
+
+    # ===========================
+    # Staff Schemas
+    # ===========================
+    StaffRequest:
+      type: object
+      required:
+        - tenantId
+        - name
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Staff member name
+        email:
+          type: string
+          description: Staff member email
+        phone:
+          type: string
+          description: Staff member phone
+        color:
+          type: string
+          description: Color code for calendar display
+        avatarUrl:
+          type: string
+          description: Avatar image URL
+        active:
+          type: boolean
+          default: true
+          description: Whether the staff member is active
+
+    StaffResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        color:
+          type: string
+        avatarUrl:
+          type: string
+        active:
+          type: boolean
+
+    # ===========================
+    # Appointment Schemas
+    # ===========================
+    AppointmentRequest:
+      type: object
+      required:
+        - serviceId
+        - staffId
+        - customer
+        - startsAt
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+          description: Tenant ID (enforced from path)
+        serviceId:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        customer:
+          $ref: '#/components/schemas/CustomerRequest'
+        startsAt:
+          type: string
+          format: date-time
+          description: Appointment start time (ISO 8601)
+        notes:
+          type: string
+          description: Appointment notes
+
+    AppointmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        priceCents:
+          type: integer
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AppointmentSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+
+    AppointmentStatusUpdate:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+
+    AppointmentStatus:
+      type: string
+      enum:
+        - PENDING
+        - CONFIRMED
+        - CANCELLED
+        - NO_SHOW
+        - COMPLETED
+      description: Appointment status
+
+    # ===========================
+    # Availability Schemas
+    # ===========================
+    Slot:
+      type: object
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+          description: Slot start time
+        endsAt:
+          type: string
+          format: date-time
+          description: Slot end time
+        staffId:
+          type: string
+          format: uuid
+          description: Available staff member ID
+
+    DayAvailability:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date of availability
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+          description: Available time slots for the day
+
+    # ===========================
+    # Staff Schedule Schemas
+    # ===========================
+    StaffScheduleRequest:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+          description: Schedule start time
+        endTime:
+          type: string
+          format: date-time
+          description: Schedule end time
+
+    StaffScheduleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+
+    # ===========================
+    # Working Hours Schemas
+    # ===========================
+    WorkingHoursRequest:
+      type: object
+      required:
+        - staffId
+        - weekday
+        - startTime
+        - endTime
+      properties:
+        staffId:
+          type: string
+          format: uuid
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of the week (1=Monday, 7=Sunday)
+        startTime:
+          type: string
+          format: time
+          description: Start time (local time, HH:mm:ss)
+          example: "09:00:00"
+        endTime:
+          type: string
+          format: time
+          description: End time (local time, HH:mm:ss)
+          example: "17:00:00"
+
+    WorkingHoursResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+
+    # ===========================
+    # Time Off Schemas
+    # ===========================
+    TimeOffRequest:
+      type: object
+      required:
+        - staffId
+        - startsAt
+        - endsAt
+      properties:
+        staffId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+          description: Time off start (UTC)
+        endsAt:
+          type: string
+          format: date-time
+          description: Time off end (UTC)
+        reason:
+          type: string
+          description: Reason for time off
+
+    TimeOffResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        staffId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+
+    # ===========================
+    # Error Schemas
+    # ===========================
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+
+  responses:
+    BadRequest:
+      description: Bad Request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Not Found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: Conflict - Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
