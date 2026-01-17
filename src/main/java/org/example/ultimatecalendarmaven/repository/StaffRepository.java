@@ -6,4 +6,6 @@ import java.util.*;
 import java.util.UUID;
 public interface StaffRepository extends JpaRepository<Staff, UUID> {
     List<Staff> findByTenantAndActiveTrue(Tenant tenant);
+
+    Optional<Staff> findByIdAndTenantId(UUID id, UUID tenantId);
 }

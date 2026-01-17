@@ -18,11 +18,11 @@ public class StaffAssignmentController {
     private final StaffAssignmentService staffAssignmentService;
     private final ServiceMapper serviceMapper;
 
-    @PostMapping("/services")
-    public ResponseEntity<Void> assign(@PathVariable("tenantId")UUID tenantId,
+    @PutMapping("/services")
+    public ResponseEntity<?> assign(@PathVariable("tenantId")UUID tenantId,
                                        @PathVariable("staffId") UUID staffId,
                                        @RequestBody List<UUID> serviceIds) {
-        staffAssignmentService.assignServices(tenantId, staffId, serviceIds);
+        staffAssignmentService.replaceServices(tenantId, staffId, serviceIds);
         return ResponseEntity.noContent().build(); // 204 idempotente
     }
 
