@@ -10,6 +10,7 @@ public interface StaffMapper {
 
     // entity -> response
     //@Mapping(target = "tenantId", source = "tenant.id")
+    @Mapping(target = "services", ignore = true)
     StaffResponseDTO toResponse(Staff staff);
 
     // request -> entity (NO seteamos tenant aquí; lo resuelve el service)

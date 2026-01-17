@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.dto;
 
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -13,4 +14,5 @@ public class StaffResponseDTO {
     private String phone;
     private String color;
     private String avatarUrl;
+    private List<ServiceResponseDTO> services;
 }

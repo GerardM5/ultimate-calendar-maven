@@ -3,7 +3,9 @@ package org.example.ultimatecalendarmaven.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.StaffRequestDTO;
 import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
+import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
 import org.example.ultimatecalendarmaven.mapper.StaffMapper;
+import org.example.ultimatecalendarmaven.service.StaffAssignmentService;
 import org.example.ultimatecalendarmaven.service.StaffService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,11 +21,20 @@ public class StaffController {
 
     private final StaffService staffService;
     private final StaffMapper staffMapper;
+    private final StaffAssignmentService staffAssignmentService;
+    private final ServiceMapper serviceMapper;
 
     @GetMapping("/tenant/{tenantId}")
     public List<StaffResponseDTO> getByTenant(@PathVariable UUID tenantId) {
         return staffService.findByTenant(tenantId).stream()
-                .map(staffMapper::toResponse)
+                .map(staff -> {
+                    var dto = staffMapper.toResponse(staff);
+                    var services = staffAssignmentService.listServicesForStaff(tenantId, staff.getId());
+                    dto.setServices(services.stream()
+                            .map(serviceMapper::toResponse)
+                            .toList());
+                    return dto;
+                })
                 .toList();
     }
 
