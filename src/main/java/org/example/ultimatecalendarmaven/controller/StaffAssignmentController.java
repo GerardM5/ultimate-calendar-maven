@@ -5,12 +5,7 @@ import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
 import org.example.ultimatecalendarmaven.service.StaffAssignmentService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,11 +18,11 @@ public class StaffAssignmentController {
     private final StaffAssignmentService staffAssignmentService;
     private final ServiceMapper serviceMapper;
 
-    @PostMapping("/services/{serviceId}")
+    @PostMapping("/services")
     public ResponseEntity<Void> assign(@PathVariable("tenantId")UUID tenantId,
                                        @PathVariable("staffId") UUID staffId,
-                                       @PathVariable("serviceId") UUID serviceId) {
-        staffAssignmentService.assignService(tenantId, staffId, serviceId);
+                                       @RequestBody List<UUID> serviceIds) {
+        staffAssignmentService.assignServices(tenantId, staffId, serviceIds);
         return ResponseEntity.noContent().build(); // 204 idempotente
     }
 

@@ -23,31 +23,19 @@ public class StaffAssignmentService {
     private final ServiceRepository serviceRepository;
     private final StaffServiceRepository staffServiceRepository;
 
+
     //NO REVISADO
-    public void assignService(UUID tenantId, UUID staffId, UUID serviceId) {
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+    public void assignServices(UUID tenantId, UUID staffId, List<UUID> serviceId) {
+        Staff staff = getStaff(staffId);
         if (!staff.getTenant().getId().equals(tenantId)) {
             throw new IllegalArgumentException("Staff does not belong to tenant: " + tenantId);
         }
-
-        ServiceEntity service = serviceRepository.findById(serviceId)
-                .orElseThrow(() -> new IllegalArgumentException("Service not found: " + serviceId));
-        if (!service.getTenant().getId().equals(tenantId)) {
-            throw new IllegalArgumentException("Service does not belong to tenant: " + tenantId);
-        }
-
-        StaffServiceId id = new StaffServiceId(staffId, serviceId);
-        if (!staffServiceRepository.existsById(id)) {
-            staffServiceRepository.save(new StaffService(staff, service));
-        }
-        // Si ya existe, idempotente: no haces nada.
+        serviceId.stream().forEach(sid -> assignService(tenantId, staff, sid));
     }
 
     //NO REVISADO
     public void unassignService(UUID tenantId, UUID staffId, UUID serviceId) {
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+        Staff staff = getStaff(staffId);
         if (!staff.getTenant().getId().equals(tenantId)) {
             throw new IllegalArgumentException("Staff does not belong to tenant: " + tenantId);
         }
@@ -65,8 +53,7 @@ public class StaffAssignmentService {
     }
 
     public List<ServiceEntity> listServicesForStaff(UUID tenantId, UUID staffId) {
-        Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+        Staff staff = getStaff(staffId);
         if (!staff.getTenant().getId().equals(tenantId)) {
             throw new IllegalArgumentException("Staff does not belong to tenant: " + tenantId);
         }
@@ -75,5 +62,25 @@ public class StaffAssignmentService {
                 .map(StaffService::getService)
                 .filter(s -> s.getTenant().getId().equals(tenantId))
                 .toList();
+    }
+
+    private void assignService(UUID tenantId, Staff staff, UUID serviceId) {
+        ServiceEntity service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new IllegalArgumentException("Service not found: " + serviceId));
+        if (!service.getTenant().getId().equals(tenantId)) {
+            throw new IllegalArgumentException("Service does not belong to tenant: " + tenantId);
+        }
+
+        StaffServiceId id = new StaffServiceId(staff.getId(), serviceId);
+        if (!staffServiceRepository.existsById(id)) {
+            staffServiceRepository.save(new StaffService(staff, service));
+        }
+        // Si ya existe, idempotente: no haces nada.
+    }
+
+    private Staff getStaff(UUID staffId) {
+        Staff staff = staffRepository.findById(staffId)
+                .orElseThrow(() -> new IllegalArgumentException("Staff not found: " + staffId));
+        return staff;
     }
 }
