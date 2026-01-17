@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestDTO;
+import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestUpdateDTO;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.StaffScheduleMapper;
 import org.example.ultimatecalendarmaven.model.Staff;
@@ -24,7 +25,8 @@ public class StaffScheduleService {
     private final StaffScheduleRepository repository;
     @Autowired
     final StaffScheduleMapper mapper;
-    @Autowired StaffService staffService;
+    @Autowired
+    StaffService staffService;
 
 
     public void assignSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
@@ -50,7 +52,38 @@ public class StaffScheduleService {
                 .toList();
     }
 
-    public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate){
+    public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate) {
         return repository.findOverlapping(staffId, startDate, endDate);
+
     }
+
+
+    public List<StaffScheduleResponseDTO> updateSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestUpdateDTO> staffScheduleRequestDTOList) {
+        Staff staff = staffService.findById(staffId).orElseThrow();
+
+        // Extraer los IDs de los DTOs
+        List<UUID> scheduleIds = staffScheduleRequestDTOList.stream()
+                .map(StaffScheduleRequestUpdateDTO::getId)
+                .toList();
+
+        // Buscar los horarios existentes en el repositorio
+        List<StaffSchedule> existingSchedules = repository.findAllById(scheduleIds);
+
+        // Actualizar los horarios existentes con los datos del DTO
+        existingSchedules.forEach(schedule -> {
+            StaffScheduleRequestUpdateDTO dto = staffScheduleRequestDTOList.stream()
+                    .filter(d -> d.getId().equals(schedule.getId()))
+                    .findFirst()
+                    .orElseThrow();
+            mapper.updateEntityFromDto(dto, schedule);
+        });
+
+        // Guardar los horarios actualizados
+        repository.saveAll(existingSchedules);
+        return mapper.toResponse(existingSchedules);
+    }
+
+
+
+
 }

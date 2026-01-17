@@ -1,11 +1,13 @@
 package org.example.ultimatecalendarmaven.mapper;
 
 import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestDTO;
+import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestUpdateDTO;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleResponseDTO;
 import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.model.StaffSchedule;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
@@ -20,5 +22,5 @@ public interface StaffScheduleMapper {
 
     List<StaffScheduleResponseDTO> toResponse(List<StaffSchedule> entities);
 
-
+    void updateEntityFromDto(StaffScheduleRequestUpdateDTO dto, @MappingTarget StaffSchedule entity);
 }
