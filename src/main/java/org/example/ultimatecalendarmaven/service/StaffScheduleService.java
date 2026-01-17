@@ -29,17 +29,17 @@ public class StaffScheduleService {
     StaffService staffService;
 
 
-    public void assignSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
+    public List<StaffScheduleResponseDTO> assignSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
 
         Staff staff = staffService.findById(staffId).orElseThrow();
 
-        repository.saveAll(
+        return repository.saveAll(
                 staffScheduleRequestDTOList
                         .stream()
                         .map(mapper::toEntity)
                         .peek(s -> s.setStaff(staff))
                         .toList()
-        );
+        ).stream().map(mapper::toResponse).toList();
 
     }
 

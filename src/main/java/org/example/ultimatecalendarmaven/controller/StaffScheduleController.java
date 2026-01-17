@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestDTO;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestUpdateDTO;
+import org.example.ultimatecalendarmaven.dto.StaffScheduleResponseDTO;
 import org.example.ultimatecalendarmaven.service.StaffScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +22,11 @@ public class StaffScheduleController {
     private final StaffScheduleService staffScheduleService;
 
     @PostMapping
-    public ResponseEntity<Void> assign(@PathVariable("tenantId") UUID tenantId,
+    public ResponseEntity<?> assign(@PathVariable("tenantId") UUID tenantId,
                                        @PathVariable("staffId") UUID staffId,
                                        @RequestBody List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
-        staffScheduleService.assignSchedule(tenantId, staffId, staffScheduleRequestDTOList);
-        return ResponseEntity.noContent().build(); // 204 idempotente
+        List<StaffScheduleResponseDTO> response = staffScheduleService.assignSchedule(tenantId, staffId, staffScheduleRequestDTOList);
+        return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping()
