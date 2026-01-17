@@ -5,6 +5,7 @@ import org.example.ultimatecalendarmaven.dto.StaffRequestDTO;
 import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
 import org.example.ultimatecalendarmaven.mapper.StaffMapper;
+import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.service.StaffAssignmentService;
 import org.example.ultimatecalendarmaven.service.StaffService;
 import org.springframework.http.ResponseEntity;
@@ -27,37 +28,35 @@ public class StaffController {
     @GetMapping("/tenant/{tenantId}")
     public List<StaffResponseDTO> getByTenant(@PathVariable UUID tenantId) {
         return staffService.findByTenant(tenantId).stream()
-                .map(staff -> {
-                    var dto = staffMapper.toResponse(staff);
-                    var services = staffAssignmentService.listServicesForStaff(tenantId, staff.getId());
-                    dto.setServices(services.stream()
-                            .map(serviceMapper::toResponse)
-                            .toList());
-                    return dto;
-                })
+                .map(staff -> toResponseWithServices(staff, tenantId))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<StaffResponseDTO> getById(@PathVariable UUID id) {
         return staffService.findById(id)
-                .map(staffMapper::toResponse)
+                .map(staff -> {
+                    UUID tenantId = staff.getTenant().getId();
+                    return toResponseWithServices(staff, tenantId);
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Validated @RequestBody StaffRequestDTO staff) {
-        var saved = staffService.create(staff);
+    public ResponseEntity<?> create(@Validated @RequestBody StaffRequestDTO staffRequest) {
+        var saved = staffService.create(staffRequest);
+        UUID tenantId = saved.getTenant().getId();
         return ResponseEntity.created(URI.create("/api/v1/staff/" + saved.getId()))
-                .body(staffMapper.toResponse(saved));
+                .body(toResponseWithServices(saved, tenantId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<StaffResponseDTO> update(@PathVariable UUID id,
                                                    @RequestBody StaffRequestDTO request) {
         var updated = staffService.update(id, request);
-        return ResponseEntity.ok(staffMapper.toResponse(updated));
+        UUID tenantId = updated.getTenant().getId();
+        return ResponseEntity.ok(toResponseWithServices(updated, tenantId));
     }
 
     @DeleteMapping("/{id}")
@@ -66,6 +65,15 @@ public class StaffController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    private StaffResponseDTO toResponseWithServices(Staff staff, UUID tenantId) {
+        var dto = staffMapper.toResponse(staff);
+        var services = staffAssignmentService.listServicesForStaff(tenantId, staff.getId());
+        dto.setServices(services.stream()
+                .map(serviceMapper::toResponse)
+                .toList());
+        return dto;
     }
 
 }
