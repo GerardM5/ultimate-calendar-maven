@@ -28,4 +28,19 @@ public interface StaffScheduleRepository extends JpaRepository<StaffSchedule, UU
             @Param("start") OffsetDateTime start,
             @Param("end") OffsetDateTime end
     );
+
+    @Query("""
+  select s
+  from StaffSchedule s
+  where s.staff.tenant.id = :tenantId
+    and (:staffIds is null or s.staff.id in :staffIds)
+    and (:from is null or s.endTime >= :from)
+    and (:to is null or s.startTime <= :to)
+""")
+    List<StaffSchedule> findByTenantAndStaffIdsAndDateRange(
+            @Param("tenantId") UUID tenantId,
+            @Param("staffIds") List<UUID> staffIds,
+            @Param("from") OffsetDateTime from,
+            @Param("to") OffsetDateTime to
+    );
 }
