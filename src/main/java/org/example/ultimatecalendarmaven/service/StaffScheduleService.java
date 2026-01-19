@@ -83,6 +83,13 @@ public class StaffScheduleService {
         return mapper.toResponse(existingSchedules);
     }
 
+    public List<StaffScheduleResponseDTO> filterSchedules(UUID tenantId, List<UUID> staffIds, OffsetDateTime from, OffsetDateTime to) {
+        return repository.findByTenantAndStaffIdsAndDateRange(tenantId, staffIds, from, to)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
 
 
 
