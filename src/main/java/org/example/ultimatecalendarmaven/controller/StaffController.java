@@ -25,7 +25,7 @@ public class StaffController {
     private final StaffAssignmentService staffAssignmentService;
     private final ServiceMapper serviceMapper;
 
-    @GetMapping("/tenant/{tenantId}")
+    @GetMapping("/tenants/{tenantId}")
     public List<StaffResponseDTO> getByTenant(@PathVariable UUID tenantId) {
         return staffService.findByTenant(tenantId).stream()
                 .map(staff -> toResponseWithServices(staff, tenantId))

@@ -21,7 +21,7 @@ public class ServiceController {
     private final ServiceService serviceService;
     private final ServiceMapper serviceMapper;
 
-    @GetMapping("/tenant/{tenantId}")
+    @GetMapping("/tenants/{tenantId}")
     public List<ServiceResponseDTO> list(@PathVariable UUID tenantId) {
         return serviceService.findByTenant(tenantId).stream()
                 .map(serviceMapper::toResponse)
