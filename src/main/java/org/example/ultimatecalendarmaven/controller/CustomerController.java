@@ -1,5 +1,6 @@
 package org.example.ultimatecalendarmaven.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.CustomerRequestDTO;
 import org.example.ultimatecalendarmaven.dto.CustomerResponseDTO;
@@ -14,6 +15,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Customer", description = "APIs for managing customers")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/tenants/{tenantId}/customers")

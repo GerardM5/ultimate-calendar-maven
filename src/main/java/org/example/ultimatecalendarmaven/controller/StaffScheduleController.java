@@ -1,5 +1,6 @@
 package org.example.ultimatecalendarmaven.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
 import org.example.ultimatecalendarmaven.dto.StaffScheduleRequestDTO;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Staff Schedule", description = "APIs for managing staff schedules")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/tenants/{tenantId}/staff/{staffId}/schedule")

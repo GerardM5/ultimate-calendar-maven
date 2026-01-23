@@ -1,5 +1,6 @@
 package org.example.ultimatecalendarmaven.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Staff Assignment", description = "APIs for assigning and unassigning services to staff members")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/tenants/{tenantId}/staff/{staffId}")

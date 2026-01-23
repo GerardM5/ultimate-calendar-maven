@@ -1,5 +1,6 @@
 package org.example.ultimatecalendarmaven.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.ServiceRequestDTO;
 import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
@@ -13,6 +14,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Service", description = "APIs for managing services")
 @RestController
 @RequestMapping("/api/v1/services")
 @RequiredArgsConstructor
