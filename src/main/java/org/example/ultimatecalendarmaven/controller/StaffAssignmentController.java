@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.ServiceIdsDTO;
 import org.example.ultimatecalendarmaven.dto.ServiceResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
 import org.example.ultimatecalendarmaven.service.StaffAssignmentService;
@@ -23,7 +24,7 @@ public class StaffAssignmentController {
     @PutMapping("/services")
     public ResponseEntity<?> assign(@PathVariable("tenantId")UUID tenantId,
                                        @PathVariable("staffId") UUID staffId,
-                                       @RequestBody List<UUID> serviceIds) {
+                                       @RequestBody ServiceIdsDTO serviceIds) {
         staffAssignmentService.replaceServices(tenantId, staffId, serviceIds);
         return ResponseEntity.noContent().build(); // 204 idempotente
     }

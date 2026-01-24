@@ -3,6 +3,7 @@ package org.example.ultimatecalendarmaven.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.ServiceIdsDTO;
 import org.example.ultimatecalendarmaven.model.ServiceEntity;
 import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.model.StaffService;
@@ -88,8 +89,8 @@ public class StaffAssignmentService {
     }
 
     @Transactional
-    public void replaceServices(UUID tenantId, UUID staffId, List<UUID> serviceIds) {
-        Set<UUID> requested = serviceIds == null ? Set.of() : new HashSet<>(serviceIds);
+    public void replaceServices(UUID tenantId, UUID staffId, ServiceIdsDTO serviceIds) {
+        Set<UUID> requested = serviceIds == null ? Set.of() : new HashSet<>(serviceIds.getServiceIds());
 
         // 1) Validar que el staff existe y pertenece al tenant (sin traer toda la entidad si no hace falta)
         Staff staff = staffRepository.findByIdAndTenantId(staffId, tenantId)
