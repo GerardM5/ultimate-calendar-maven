@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.Set;
 import java.util.LinkedHashSet;
@@ -70,8 +71,8 @@ public class AvailabilityService {
                     .filter(s -> s.getTenant() != null && tenant.getId().equals(s.getTenant().getId()))
                     .toList();
 
-            Map<UUID, String> staffNames = candidates.stream()
-                    .collect(Collectors.toMap(Staff::getId, Staff::getName));
+            Map<UUID, Staff> staffNames = candidates.stream()
+                    .collect(Collectors.toMap(Staff::getId, Function.identity()));
 
             for (Staff s : candidates) {
                 slotsAll.addAll(computeSlotsForStaff(tenant, service, s, from));
@@ -103,7 +104,8 @@ public class AvailabilityService {
                         Set<StaffResponseDTO> staffSet = staffBySlot.getOrDefault(key, Set.of()).stream()
                                 .map(id -> StaffResponseDTO.builder()
                                         .id(id)
-                                        .name(staffNames.get(id))
+                                        .name(staffNames.get(id).getName())
+                                        .avatarUrl(staffNames.get(id).getAvatarUrl())
                                         .build())
                                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
