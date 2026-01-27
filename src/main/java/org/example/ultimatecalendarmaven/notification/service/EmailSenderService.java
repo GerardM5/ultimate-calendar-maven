@@ -28,6 +28,7 @@ public class EmailSenderService {
     @Scheduled(fixedDelayString = "${mail.outbox.poll-ms:5000}")
     @Transactional
     public void processOutbox() {
+        log.info("[MAIL][WORKER] tick {}", java.time.OffsetDateTime.now());
         List<OutboxEmail> batch = outboxRepo.findReadyToSend(
                 EmailStatus.PENDING,
                 LocalDateTime.now(),
