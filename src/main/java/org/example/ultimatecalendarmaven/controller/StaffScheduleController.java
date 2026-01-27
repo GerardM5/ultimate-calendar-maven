@@ -25,16 +25,20 @@ public class StaffScheduleController {
 
     @PostMapping
     public ResponseEntity<?> assign(@PathVariable("tenantId") UUID tenantId,
-                                       @PathVariable("staffId") UUID staffId,
-                                       @RequestBody List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
+                                    @PathVariable("staffId") UUID staffId,
+                                    @RequestBody List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
         List<StaffScheduleResponseDTO> response = staffScheduleService.assignSchedule(tenantId, staffId, staffScheduleRequestDTOList);
         return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping()
     public ResponseEntity<?> list(@PathVariable UUID tenantId,
-                                  @PathVariable UUID staffId) {
-        return ResponseEntity.ok().body(staffScheduleService.listScheduleForStaff(tenantId, staffId));
+                                  @RequestParam(required = false) List<UUID> staffId,
+                                  //from and to params
+                                  @RequestParam(required = false) String from,
+                                  @RequestParam(required = false) String to
+    ) {
+        return ResponseEntity.ok().body(staffScheduleService.getSchedules(tenantId, staffId, from, to));
     }
 
     @PutMapping
