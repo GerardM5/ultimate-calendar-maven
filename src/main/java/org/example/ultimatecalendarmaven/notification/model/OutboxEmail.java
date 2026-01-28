@@ -46,7 +46,7 @@ public class OutboxEmail {
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
-    protected OutboxEmail() {
+    public OutboxEmail() {
         // JPA
     }
 

@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.notification.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.ultimatecalendarmaven.model.Appointment;
 import org.example.ultimatecalendarmaven.notification.model.EmailStatus;
 import org.example.ultimatecalendarmaven.notification.model.OutboxEmail;
 import org.example.ultimatecalendarmaven.notification.model.TenantMailSettings;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -79,5 +81,27 @@ public class EmailSenderService {
 
             outboxRepo.save(email);
         }
+    }
+
+    public void sendAppointmentConfirmationEmail(Appointment saved) {
+        OutboxEmail email = new OutboxEmail();
+        email.setTenantId(saved.getTenant().getId());
+        email.setToEmail(saved.getCustomer().getEmail());
+        email.setTemplateId("appointment-confirmation");
+        email.setPayload(
+                Map.of(
+                        "appointmentId", saved.getId().toString(),
+                        "customerName", saved.getCustomer().getName(),
+                        "serviceName", saved.getService().getName(),
+                        "staffName", saved.getStaff().getName(),
+                        "startsAt", saved.getStartsAt().toString(),
+                        "endsAt", saved.getEndsAt().toString()
+                ).toString()
+        );
+        email.setStatus(EmailStatus.PENDING);
+        email.setAttempts(0);
+        email.setNextAttemptAt(LocalDateTime.now());
+
+        outboxRepo.save(email);
     }
 }
