@@ -48,6 +48,11 @@ public class OutboxEmail {
 
     public OutboxEmail() {
         // JPA
+        this.id = UUID.randomUUID();
+        this.status = EmailStatus.PENDING;
+        this.attempts = 0;
+        this.nextAttemptAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
     }
 
     public OutboxEmail(UUID tenantId, String templateId, String toEmail, String payload) {
