@@ -101,6 +101,7 @@ public class EmailSenderService {
         email.setStatus(EmailStatus.PENDING);
         email.setAttempts(0);
         email.setNextAttemptAt(LocalDateTime.now());
+        email.setCreatedAt(LocalDateTime.now());
 
         outboxRepo.save(email);
     }

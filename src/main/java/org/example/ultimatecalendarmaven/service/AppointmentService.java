@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
 import org.example.ultimatecalendarmaven.model.*;
+import org.example.ultimatecalendarmaven.notification.service.EmailOutboxService;
 import org.example.ultimatecalendarmaven.notification.service.EmailSenderService;
 import org.example.ultimatecalendarmaven.repository.*;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -26,6 +27,7 @@ public class AppointmentService {
     private final AppointmentMapper appointmentMapper;
     private final CustomerService customerService;
     private final EmailSenderService emailSenderService;
+    private final EmailOutboxService emailOutboxService;
 
     @Transactional(readOnly = true)
     public List<Appointment> findByTenantAndRange(UUID tenantId, OffsetDateTime from, OffsetDateTime to) {
@@ -64,6 +66,7 @@ public class AppointmentService {
                     Customer newCustomer = new Customer();
                     newCustomer.setTenant(tenant);
                     newCustomer.setName(dto.getCustomer().getName());
+                    newCustomer.setEmail(dto.getCustomer().getEmail());
                     newCustomer.setPhone(dto.getCustomer().getPhone());
                     return customerRepository.save(newCustomer);
                 });
@@ -93,7 +96,8 @@ public class AppointmentService {
         // 4) Persistir; si hay carrera, el EXCLUDE en DB lanzará una excepción de integridad -> 409
         try {
             Appointment saved = appointmentRepository.save(entity);
-            emailSenderService.sendAppointmentConfirmationEmail(saved);
+            //emailSenderService.sendAppointmentConfirmationEmail(saved);
+            emailOutboxService.sendAppointmentConfirmationEmail(saved);
             return saved;
         } catch (DataIntegrityViolationException ex) {
             // probablemente por constraint de solape (EXCLUDE)
