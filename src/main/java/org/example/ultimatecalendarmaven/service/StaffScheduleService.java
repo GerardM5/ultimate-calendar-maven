@@ -43,11 +43,20 @@ public class StaffScheduleService {
 
     }
 
-    public List<StaffScheduleResponseDTO> listScheduleForStaff(UUID tenantId, UUID staffId) {
-        Staff staff = Staff.builder()
-                .id(staffId)
-                .build();
-        return repository.findByStaff(staff).stream()
+    public List<StaffScheduleResponseDTO> getSchedules(UUID tenantId, List<UUID> staffIds, String from, String to) {
+
+        if (staffIds == null || staffIds.isEmpty()) {
+            staffIds = staffService.findByTenant(tenantId).stream()
+                    .map(Staff::getId)
+                    .toList();
+        }
+        //si no viene from y to, poner principio de este mes y fin de este mes
+        List<StaffSchedule> staffSchedules = repository.findAllByStaffIdsAndDateRange(
+                staffIds,
+                from != null ? OffsetDateTime.parse(from) : OffsetDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0),
+                to != null ? OffsetDateTime.parse(to) : OffsetDateTime.now().withDayOfMonth(1).plusMonths(1).withHour(0).withMinute(0).withSecond(0).withNano(0)
+        );
+        return staffSchedules.stream()
                 .map(mapper::toResponse)
                 .toList();
     }

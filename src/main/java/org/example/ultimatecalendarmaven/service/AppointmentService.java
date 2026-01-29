@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
 import org.example.ultimatecalendarmaven.model.*;
+import org.example.ultimatecalendarmaven.notification.service.EmailSenderService;
 import org.example.ultimatecalendarmaven.repository.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class AppointmentService {
     private final CustomerRepository customerRepository;
     private final AppointmentMapper appointmentMapper;
     private final CustomerService customerService;
+    private final EmailSenderService emailSenderService;
 
     @Transactional(readOnly = true)
     public List<Appointment> findByTenantAndRange(UUID tenantId, OffsetDateTime from, OffsetDateTime to) {
@@ -90,7 +92,9 @@ public class AppointmentService {
 
         // 4) Persistir; si hay carrera, el EXCLUDE en DB lanzará una excepción de integridad -> 409
         try {
-            return appointmentRepository.save(entity);
+            Appointment saved = appointmentRepository.save(entity);
+            emailSenderService.sendAppointmentConfirmationEmail(saved);
+            return saved;
         } catch (DataIntegrityViolationException ex) {
             // probablemente por constraint de solape (EXCLUDE)
             throw new ConflictException("Slot not available", ex);

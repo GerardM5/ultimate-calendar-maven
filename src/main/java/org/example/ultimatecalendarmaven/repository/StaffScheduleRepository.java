@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,4 +29,13 @@ public interface StaffScheduleRepository extends JpaRepository<StaffSchedule, UU
             @Param("start") OffsetDateTime start,
             @Param("end") OffsetDateTime end
     );
+
+    @Query("""
+        select s
+        from StaffSchedule s
+        where s.staff.id in :staffIds
+          and s.startTime < :to
+          and s.endTime > :from
+    """)
+    List<StaffSchedule> findAllByStaffIdsAndDateRange(List<UUID> staffIds, OffsetDateTime from, OffsetDateTime to);
 }
