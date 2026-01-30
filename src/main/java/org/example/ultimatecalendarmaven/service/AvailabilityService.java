@@ -231,12 +231,14 @@ public class AvailabilityService {
                     .from(f)
                     .build();
 
-            // Si hay al menos un slot -> available=true
+
             List<SlotDTO> slots = getAvailability(req);
-            boolean isAvailable = !slots.isEmpty();
+            //si no trae slots pasar a siguiente dia
+            if (slots.isEmpty()) continue;
+
             result.add(DayAvailabilityDTO.builder()
                     .date(f)
-                    .isAvailable(isAvailable)
+                    .isAvailable(true)
                     .availableSlots(slots.size())
                     .build());
         }
