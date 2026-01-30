@@ -9,6 +9,6 @@ public class DayAvailabilityDTO {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX")
     private OffsetDateTime date;
-
-    private boolean available;
+    private boolean isAvailable;
+    private int availableSlots;
 }

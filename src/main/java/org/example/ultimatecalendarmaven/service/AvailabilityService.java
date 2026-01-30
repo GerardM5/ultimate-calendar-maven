@@ -232,11 +232,12 @@ public class AvailabilityService {
                     .build();
 
             // Si hay al menos un slot -> available=true
-            boolean available = !getAvailability(req).isEmpty();
-
+            List<SlotDTO> slots = getAvailability(req);
+            boolean isAvailable = !slots.isEmpty();
             result.add(DayAvailabilityDTO.builder()
                     .date(f)
-                    .available(available)
+                    .isAvailable(isAvailable)
+                    .availableSlots(slots.size())
                     .build());
         }
         return result;
