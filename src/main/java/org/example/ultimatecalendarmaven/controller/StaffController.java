@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.StaffFilter;
 import org.example.ultimatecalendarmaven.dto.StaffRequestDTO;
 import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.ServiceMapper;
@@ -28,10 +29,24 @@ public class StaffController {
     private final ServiceMapper serviceMapper;
 
     @GetMapping("/tenants/{tenantId}")
-    public List<StaffResponseDTO> getByTenant(@PathVariable UUID tenantId) {
+    public List<StaffResponseDTO> getByTenant(@PathVariable UUID tenantId,
+                                              //contains services (array de serviceId)
+                                              @RequestParam(required = false) List<String> containsServices
+                                              ) {
+        //busqueda por filtros
         return staffService.findByTenant(tenantId).stream()
                 .map(staff -> toResponseWithServices(staff, tenantId))
                 .toList();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<StaffResponseDTO>> searchStaff(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) UUID serviceId
+    ) {
+        StaffFilter filter = new StaffFilter(name, active, serviceId);
+        return ResponseEntity.ok(staffService.search(filter));
     }
 
     @GetMapping("/{id}")
@@ -77,5 +92,6 @@ public class StaffController {
                 .toList());
         return dto;
     }
+
 
 }

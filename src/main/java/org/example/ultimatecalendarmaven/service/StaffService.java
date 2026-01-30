@@ -1,15 +1,17 @@
 package org.example.ultimatecalendarmaven.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.StaffFilter;
 import org.example.ultimatecalendarmaven.dto.StaffRequestDTO;
+import org.example.ultimatecalendarmaven.dto.StaffResponseDTO;
 import org.example.ultimatecalendarmaven.mapper.StaffMapper;
 import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.repository.StaffRepository;
-import org.example.ultimatecalendarmaven.repository.TenantRepository;
+import org.example.ultimatecalendarmaven.repository.specification.StaffSpecifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,5 +59,12 @@ public class StaffService {
             return true;
         }
         return false;
+    }
+
+    public List<StaffResponseDTO> search(StaffFilter filter) {
+        Specification<Staff> spec = StaffSpecifications.withFilter(filter);
+        return staffRepository.findAll(spec).stream()
+                .map(staffMapper::toResponse)
+                .toList();
     }
 }
