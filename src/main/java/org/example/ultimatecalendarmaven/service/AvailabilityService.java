@@ -323,16 +323,19 @@ public class AvailabilityService {
         return out;
     }
 
-    /** Divide rangos libres en “slots” de tamaño fijo */
+    /** Divide rangos libres en “slots” de tamaño fijo desde el final hacia atrás */
     private static List<Range> splitBySize(List<Range> free, Duration size) {
         List<Range> out = new ArrayList<>();
+
         for (Range r : free) {
-            OffsetDateTime cur = r.start;
-            while (!cur.plus(size).isAfter(r.end)) {
-                out.add(new Range(cur, cur.plus(size), r.staff));
-                cur = cur.plus(size);
+            OffsetDateTime curEnd = r.end;
+
+            while (!curEnd.minus(size).isBefore(r.start)) {
+                OffsetDateTime slotStart = curEnd.minus(size);
+                out.add(new Range(slotStart, curEnd, r.staff));
+                curEnd = slotStart;
             }
         }
-        return out;
+        return out.reversed();
     }
 }
