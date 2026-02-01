@@ -81,17 +81,16 @@ public class AppointmentService {
         entity.setStartsAt(dto.getStartsAt());
         entity.setEndsAt(dto.getStartsAt().plusMinutes(service.getDurationMin()));
         entity.setPriceCents(service.getPriceCents());
+        entity.setActive(true);
         entity.setStatus(AppointmentStatus.valueOf("PENDING"));
 
         // (Opcional) 3) Validación previa de solape en memoria (rápida/optimista)
         // Reutilizamos method del repo: any cita activa que solape el rango?
-        boolean hasOverlap = !appointmentRepository
-                .findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(
-                        staff, entity.getEndsAt(), entity.getStartsAt())
-                .isEmpty();
-        if (hasOverlap) {
-            throw new ConflictException("Slot not available");
-        }
+        boolean hasOverlap = appointmentRepository
+                .existsByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(
+                        staff, entity.getEndsAt(), entity.getStartsAt());
+
+        if (hasOverlap) throw new ConflictException("Slot not available");
 
         // 4) Persistir; si hay carrera, el EXCLUDE en DB lanzará una excepción de integridad -> 409
         try {

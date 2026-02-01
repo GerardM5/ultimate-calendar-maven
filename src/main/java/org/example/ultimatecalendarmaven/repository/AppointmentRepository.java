@@ -36,4 +36,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to
     );
+
+    boolean existsByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(Staff staff, OffsetDateTime endsAt, OffsetDateTime startsAt);
 }
