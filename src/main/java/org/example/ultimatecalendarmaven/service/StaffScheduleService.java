@@ -33,13 +33,14 @@ public class StaffScheduleService {
 
         Staff staff = staffService.findById(staffId).orElseThrow();
 
-        return repository.saveAll(
-                staffScheduleRequestDTOList
-                        .stream()
-                        .map(mapper::toEntity)
-                        .peek(s -> s.setStaff(staff))
-                        .toList()
-        ).stream().map(mapper::toResponse).toList();
+        var entities = staffScheduleRequestDTOList.stream()
+                .map(mapper::toEntity)
+                .peek(e -> e.setStaff(staff))
+                .toList();
+
+        return repository.saveAll(entities).stream()
+                .map(mapper::toResponse)
+                .toList();
 
     }
 
