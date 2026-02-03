@@ -29,8 +29,9 @@ public class StaffScheduleService {
     StaffService staffService;
 
 
-    public List<StaffScheduleResponseDTO> assignSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
-
+    public List<StaffScheduleResponseDTO> assignSchedule(UUID tenantId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
+        //TODO hacer desarrollo nuevo
+        UUID staffId = staffScheduleRequestDTOList.get(0).getStaffId();
         Staff staff = staffService.findById(staffId).orElseThrow();
 
         var entities = staffScheduleRequestDTOList.stream()

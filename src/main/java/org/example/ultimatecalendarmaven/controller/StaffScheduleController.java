@@ -25,9 +25,8 @@ public class StaffScheduleController {
 
     @PostMapping
     public ResponseEntity<?> assign(@RequestHeader(name = "X-Tenant-ID") UUID tenantId,
-                                    @RequestParam("staffId") UUID staffId,
                                     @RequestBody List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
-        List<StaffScheduleResponseDTO> response = staffScheduleService.assignSchedule(tenantId, staffId, staffScheduleRequestDTOList);
+        List<StaffScheduleResponseDTO> response = staffScheduleService.assignSchedule(tenantId, staffScheduleRequestDTOList);
         return ResponseEntity.status(201).body(response);
     }
 
