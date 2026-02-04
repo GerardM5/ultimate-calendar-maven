@@ -13,8 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,20 +30,52 @@ public class StaffScheduleService {
     StaffService staffService;
 
 
-    public List<StaffScheduleResponseDTO> assignSchedule(UUID tenantId, List<StaffScheduleRequestDTO> staffScheduleRequestDTOList) {
-        //TODO hacer desarrollo nuevo
-        UUID staffId = staffScheduleRequestDTOList.get(0).getStaffId();
-        Staff staff = staffService.findById(staffId).orElseThrow();
+    public List<StaffScheduleResponseDTO> assignSchedule(
+            UUID tenantId,
+            List<StaffScheduleRequestDTO> staffScheduleRequestDTOList
+    ) {
+        // 1) Unique staffIds
+        Set<UUID> staffIds = staffScheduleRequestDTOList.stream()
+                .map(StaffScheduleRequestDTO::getStaffId)
+                .collect(Collectors.toSet());
 
-        var entities = staffScheduleRequestDTOList.stream()
-                .map(mapper::toEntity)
-                .peek(e -> e.setStaff(staff))
+        // 2) Batch fetch
+        List<Staff> staffList = staffService.findAllById(staffIds);
+
+        // 3) Validate missing staff ids
+        Set<UUID> foundIds = staffList.stream()
+                .map(Staff::getId)
+                .collect(Collectors.toSet());
+
+        Set<UUID> missingIds = new HashSet<>(staffIds);
+        missingIds.removeAll(foundIds);
+
+        if (!missingIds.isEmpty()) {
+            throw new IllegalArgumentException("Staff not found: " + missingIds);
+        }
+
+        // 4) Validate tenant + build lookup map
+        Map<UUID, Staff> staffById = staffList.stream()
+                .peek(staff -> {
+                    if (!staff.getTenant().getId().equals(tenantId)) {
+                        throw new IllegalArgumentException("Staff does not belong to tenant: " + staff.getId());
+                    }
+                })
+                .collect(Collectors.toMap(Staff::getId, Function.identity()));
+
+        // 5) Map dtos -> entities
+        List<StaffSchedule> entities = staffScheduleRequestDTOList.stream()
+                .map(dto -> {
+                    Staff staff = staffById.get(dto.getStaffId()); // safe (validated above)
+                    StaffSchedule entity = mapper.toEntity(dto);
+                    entity.setStaff(staff);
+                    return entity;
+                })
                 .toList();
 
         return repository.saveAll(entities).stream()
                 .map(mapper::toResponse)
                 .toList();
-
     }
 
     public List<StaffScheduleResponseDTO> getSchedules(UUID tenantId, List<UUID> staffIds, String from, String to) {

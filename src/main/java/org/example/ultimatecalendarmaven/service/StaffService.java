@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -66,5 +67,9 @@ public class StaffService {
         return staffRepository.findAll(spec).stream()
                 .map(staffMapper::toResponse)
                 .toList();
+    }
+
+    public List<Staff> findAllById(Set<UUID> staffIds) {
+        return staffRepository.findAllById(staffIds);
     }
 }
