@@ -6,13 +6,15 @@ import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.model.Tenant;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
+public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
+        JpaSpecificationExecutor<Appointment> {
     List<Appointment> findByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(Staff staff, OffsetDateTime ends, OffsetDateTime starts);
 
     List<Appointment> findByTenantAndStartsAtLessThanAndStartsAtGreaterThan(Tenant tenant, OffsetDateTime ends, OffsetDateTime starts);

@@ -2,10 +2,7 @@ package org.example.ultimatecalendarmaven.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
-import org.example.ultimatecalendarmaven.dto.AppointmentResponseDTO;
-import org.example.ultimatecalendarmaven.dto.AppointmentSummaryDTO;
-import org.example.ultimatecalendarmaven.dto.AppointmentStatusUpdateDTO;
+import org.example.ultimatecalendarmaven.dto.*;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
 import org.example.ultimatecalendarmaven.model.Appointment;
 import org.example.ultimatecalendarmaven.service.AppointmentService;
@@ -32,9 +29,11 @@ public class AppointmentController {
     public List<AppointmentSummaryDTO> list(
             @PathVariable UUID tenantId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(required = false) UUID staffId
     ) {
-        return appointmentMapper.toSummaryList(appointmentService.findByTenantAndRange(tenantId, from, to));
+        AppointmentFilter filter = new AppointmentFilter(from, to, staffId);
+        return appointmentMapper.toSummaryList(appointmentService.search(tenantId, filter));
     }
 
     @GetMapping("/{id}")

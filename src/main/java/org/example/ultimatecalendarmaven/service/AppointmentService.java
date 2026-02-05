@@ -1,12 +1,14 @@
 package org.example.ultimatecalendarmaven.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.AppointmentFilter;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
 import org.example.ultimatecalendarmaven.model.*;
 import org.example.ultimatecalendarmaven.notification.service.EmailOutboxService;
 import org.example.ultimatecalendarmaven.notification.service.EmailSenderService;
 import org.example.ultimatecalendarmaven.repository.*;
+import org.example.ultimatecalendarmaven.repository.specification.AppointmentSpecifications;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,5 +125,10 @@ public class AppointmentService {
     public static class ConflictException extends RuntimeException {
         public ConflictException(String msg) { super(msg); }
         public ConflictException(String msg, Throwable t) { super(msg, t); }
+    }
+
+    public List<Appointment> search(UUID tenantId, AppointmentFilter filter) {
+        var spec = AppointmentSpecifications.withFilter(tenantId, filter);
+        return appointmentRepository.findAll(spec);
     }
 }
