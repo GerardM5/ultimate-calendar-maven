@@ -54,7 +54,11 @@ public class StaffScheduleController {
         );
     }
 
-
-
+    @DeleteMapping
+    public ResponseEntity<?> delete(@RequestHeader(name = "X-Tenant-ID") UUID tenantId,
+                                    @RequestParam UUID scheduleId) {
+        staffScheduleService.deleteSchedule(tenantId, scheduleId);
+        return ResponseEntity.noContent().build();
+    }
 
 }

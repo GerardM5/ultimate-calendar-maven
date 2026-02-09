@@ -127,7 +127,14 @@ public class StaffScheduleService {
         return mapper.toResponse(existingSchedules);
     }
 
+    public void deleteSchedule(UUID tenantId, UUID id) {
+        StaffSchedule schedule = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Schedule not found: " + id));
 
+        if (!schedule.getStaff().getTenant().getId().equals(tenantId)) {
+            throw new IllegalArgumentException("Schedule does not belong to tenant: " + id);
+        }
 
-
+        repository.delete(schedule);
+    }
 }
