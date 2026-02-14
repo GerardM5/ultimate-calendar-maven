@@ -2,7 +2,7 @@ package org.example.ultimatecalendarmaven.dto;
 
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -13,6 +13,6 @@ import java.util.UUID;
 public class StaffScheduleRequestUpdateDTO {
 
     private UUID id;
-    private OffsetDateTime startTime;
-    private OffsetDateTime endTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 }

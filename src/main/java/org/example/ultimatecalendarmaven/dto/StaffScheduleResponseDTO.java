@@ -2,7 +2,7 @@ package org.example.ultimatecalendarmaven.dto;
 
 import lombok.*;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -13,6 +13,6 @@ public class StaffScheduleResponseDTO {
 
     private String id;
     private StaffResponseDTO staff;
-    private OffsetDateTime startTime;
-    private OffsetDateTime endTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 }

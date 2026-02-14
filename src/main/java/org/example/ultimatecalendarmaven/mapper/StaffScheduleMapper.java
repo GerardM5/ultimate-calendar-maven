@@ -24,11 +24,15 @@ public interface StaffScheduleMapper {
     List<StaffSchedule> toEntity(List<StaffScheduleRequestDTO> dtos, @Context BusinessTimeService businessTimeService);
 
     @Mapping(target = "id", expression = "java(entity.getId() != null ? entity.getId().toString() : null)")
-    @Mapping(target = "startTime", expression = "java(businessTimeService.toLocalDateTime(entity.getStartTime()))")
-    @Mapping(target = "endTime", expression = "java(businessTimeService.toLocalDateTime(entity.getEndTime()))")
+    @Mapping(target = "startTime", expression = "java(businessTimeService.toLocal(entity.getStartTime()))")
+    @Mapping(target = "endTime", expression = "java(businessTimeService.toLocal(entity.getEndTime()))")
     StaffScheduleResponseDTO toResponse(StaffSchedule entity, @Context BusinessTimeService businessTimeService);
     List<StaffScheduleResponseDTO> toResponse(List<StaffSchedule> entities, @Context BusinessTimeService businessTimeService);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "staff", ignore = true)
+    @Mapping(target = "startTime", expression = "java(businessTimeService.toInstant(dto.getStartTime()))")
+    @Mapping(target = "endTime", expression = "java(businessTimeService.toInstant(dto.getEndTime()))")
     void updateEntityFromDto(StaffScheduleRequestUpdateDTO dto,
                              @MappingTarget StaffSchedule entity,
                              @Context BusinessTimeService businessTimeService);
