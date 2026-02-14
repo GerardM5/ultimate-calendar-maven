@@ -3,6 +3,7 @@ package org.example.ultimatecalendarmaven.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -27,9 +28,9 @@ public class StaffSchedule {
     private Staff staff;
 
     @Column(name = "start_time", nullable = false)
-    private OffsetDateTime startTime;
+    private Instant startTime;
 
     @Column(name = "end_time", nullable = false)
-    private OffsetDateTime endTime;
+    private Instant endTime;
 
 }

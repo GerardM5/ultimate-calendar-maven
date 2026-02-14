@@ -8,11 +8,11 @@ import org.example.ultimatecalendarmaven.mapper.StaffScheduleMapper;
 import org.example.ultimatecalendarmaven.model.Staff;
 import org.example.ultimatecalendarmaven.model.StaffSchedule;
 import org.example.ultimatecalendarmaven.repository.StaffScheduleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.example.ultimatecalendarmaven.utils.BusinessTimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,12 +22,10 @@ import java.util.stream.Collectors;
 @Transactional
 public class StaffScheduleService {
 
-    @Autowired
     private final StaffScheduleRepository repository;
-    @Autowired
-    final StaffScheduleMapper mapper;
-    @Autowired
-    StaffService staffService;
+    private final StaffScheduleMapper mapper;
+    private final StaffService staffService;
+    private final BusinessTimeService businessTimeService;
 
 
     public List<StaffScheduleResponseDTO> assignSchedule(
@@ -67,36 +65,45 @@ public class StaffScheduleService {
         List<StaffSchedule> entities = staffScheduleRequestDTOList.stream()
                 .map(dto -> {
                     Staff staff = staffById.get(dto.getStaffId()); // safe (validated above)
-                    StaffSchedule entity = mapper.toEntity(dto);
+                    StaffSchedule entity = mapper.toEntity(dto,businessTimeService);
                     entity.setStaff(staff);
                     return entity;
                 })
                 .toList();
 
-        return repository.saveAll(entities).stream()
-                .map(mapper::toResponse)
-                .toList();
+        List<StaffSchedule> saved = repository.saveAll(entities);
+        return mapper.toResponse(saved, businessTimeService);
     }
 
     public List<StaffScheduleResponseDTO> getSchedules(UUID tenantId, List<UUID> staffIds, String from, String to) {
-
         if (staffIds == null || staffIds.isEmpty()) {
             staffIds = staffService.findByTenant(tenantId).stream()
                     .map(Staff::getId)
                     .toList();
+        } else {
+            List<Staff> staffList = staffService.findAllById(new HashSet<>(staffIds));
+            Set<UUID> foundIds = staffList.stream().map(Staff::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(staffIds);
+            missingIds.removeAll(foundIds);
+            if (!missingIds.isEmpty()) {
+                throw new IllegalArgumentException("Staff not found: " + missingIds);
+            }
+            boolean anyWrongTenant = staffList.stream()
+                    .anyMatch(s -> !s.getTenant().getId().equals(tenantId));
+            if (anyWrongTenant) {
+                throw new IllegalArgumentException("One or more staff do not belong to tenant");
+            }
         }
         //si no viene from y to, poner principio de este mes y fin de este mes
         List<StaffSchedule> staffSchedules = repository.findAllByStaffIdsAndDateRange(
                 staffIds,
-                from != null ? OffsetDateTime.parse(from) : OffsetDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0),
-                to != null ? OffsetDateTime.parse(to) : OffsetDateTime.now().withDayOfMonth(1).plusMonths(1).withHour(0).withMinute(0).withSecond(0).withNano(0)
+                parseRangeStart(from),
+                parseRangeEnd(to)
         );
-        return staffSchedules.stream()
-                .map(mapper::toResponse)
-                .toList();
+        return mapper.toResponse(staffSchedules, businessTimeService);
     }
 
-    public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, OffsetDateTime startDate, OffsetDateTime endDate) {
+    public List<StaffSchedule> getScheduleByStaffAndRangeDates(UUID staffId, Instant startDate, Instant endDate) {
         return repository.findOverlapping(staffId, startDate, endDate);
 
     }
@@ -104,6 +111,9 @@ public class StaffScheduleService {
 
     public List<StaffScheduleResponseDTO> updateSchedule(UUID tenantId, UUID staffId, List<StaffScheduleRequestUpdateDTO> staffScheduleRequestDTOList) {
         Staff staff = staffService.findById(staffId).orElseThrow();
+        if (!staff.getTenant().getId().equals(tenantId)) {
+            throw new IllegalArgumentException("Staff does not belong to tenant: " + staffId);
+        }
 
         // Extraer los IDs de los DTOs
         List<UUID> scheduleIds = staffScheduleRequestDTOList.stream()
@@ -115,16 +125,22 @@ public class StaffScheduleService {
 
         // Actualizar los horarios existentes con los datos del DTO
         existingSchedules.forEach(schedule -> {
+            if (!schedule.getStaff().getId().equals(staffId)) {
+                throw new IllegalArgumentException("Schedule does not belong to staff: " + schedule.getId());
+            }
+            if (!schedule.getStaff().getTenant().getId().equals(tenantId)) {
+                throw new IllegalArgumentException("Schedule does not belong to tenant: " + schedule.getId());
+            }
             StaffScheduleRequestUpdateDTO dto = staffScheduleRequestDTOList.stream()
                     .filter(d -> d.getId().equals(schedule.getId()))
                     .findFirst()
                     .orElseThrow();
-            mapper.updateEntityFromDto(dto, schedule);
+            mapper.updateEntityFromDto(dto, schedule, businessTimeService);
         });
 
         // Guardar los horarios actualizados
-        repository.saveAll(existingSchedules);
-        return mapper.toResponse(existingSchedules);
+        List<StaffSchedule> saved = repository.saveAll(existingSchedules);
+        return mapper.toResponse(saved, businessTimeService);
     }
 
     public void deleteSchedule(UUID tenantId, UUID id) {
@@ -137,4 +153,39 @@ public class StaffScheduleService {
 
         repository.delete(schedule);
     }
+
+    private Instant parseRangeStart(String from) {
+        if (from != null && !from.isBlank()) {
+            return parseFlexibleInstant(from);
+        }
+        // default: start of current month in business timezone
+        var now = java.time.ZonedDateTime.now(businessTimeService.getZone());
+        var startOfMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+        return businessTimeService.toInstant(startOfMonth);
+    }
+
+    private Instant parseRangeEnd(String to) {
+        if (to != null && !to.isBlank()) {
+            return parseFlexibleInstant(to);
+        }
+        // default: start of next month in business timezone
+        var now = java.time.ZonedDateTime.now(businessTimeService.getZone());
+        var startOfNextMonth = now.withDayOfMonth(1).toLocalDate().atStartOfDay().plusMonths(1);
+        return businessTimeService.toInstant(startOfNextMonth);
+    }
+
+    private Instant parseFlexibleInstant(String value) {
+        // Accept: Instant (e.g. 2026-02-14T13:00:00Z), OffsetDateTime, or LocalDateTime (business local)
+        try {
+            return Instant.parse(value);
+        } catch (Exception ignored) {
+        }
+        try {
+            return java.time.OffsetDateTime.parse(value).toInstant();
+        } catch (Exception ignored) {
+        }
+        return businessTimeService.toInstant(java.time.LocalDateTime.parse(value));
+    }
+
+
 }
