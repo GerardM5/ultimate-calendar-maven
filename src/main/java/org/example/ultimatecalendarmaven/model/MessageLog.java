@@ -1,7 +1,11 @@
 package org.example.ultimatecalendarmaven.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.*;
 import java.util.*;
 
@@ -28,8 +32,11 @@ public class MessageLog {
 
     private String template;
 
+
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String payload; // raw JSON
+    private JsonNode payload;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_appointment", foreignKey = @ForeignKey(name = "msg_appt_fk"))
