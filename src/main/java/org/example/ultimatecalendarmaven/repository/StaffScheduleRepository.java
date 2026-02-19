@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -18,24 +19,24 @@ public interface StaffScheduleRepository extends JpaRepository<StaffSchedule, UU
     List<StaffSchedule> findByStaff(Staff staff);
 
     @Query("""
-  select s
-  from StaffSchedule s
-  where s.staff.id = :staffId
-    and s.startTime <= :end
-    and s.endTime >= :start
-""")
+              select s
+              from StaffSchedule s
+              where s.staff.id = :staffId
+                and s.startTime <= :end
+                and s.endTime >= :start
+            """)
     List<StaffSchedule> findOverlapping(
             @Param("staffId") UUID staffId,
-            @Param("start") OffsetDateTime start,
-            @Param("end") OffsetDateTime end
+            @Param("start") Instant start,
+            @Param("end") Instant end
     );
 
     @Query("""
-        select s
-        from StaffSchedule s
-        where s.staff.id in :staffIds
-          and s.startTime < :to
-          and s.endTime > :from
-    """)
-    List<StaffSchedule> findAllByStaffIdsAndDateRange(List<UUID> staffIds, OffsetDateTime from, OffsetDateTime to);
+                select s
+                from StaffSchedule s
+                where s.staff.id in :staffIds
+                  and s.startTime < :to
+                  and s.endTime > :from
+        """)
+    List<StaffSchedule> findAllByStaffIdsAndDateRange(List<UUID> staffIds, Instant from, Instant to);
 }

@@ -166,14 +166,18 @@ public class AvailabilityService {
         OffsetDateTime endOfDay = startOfDay.plusDays(1);
 
         List<StaffSchedule> schedules = staffScheduleService.getScheduleByStaffAndRangeDates(
-                staff.getId(), startOfDay, endOfDay);
+                staff.getId(), startOfDay.toInstant(), endOfDay.toInstant());
 
         //TODO orden al reves para mejorar logica?
 
         // construimos los rangos base solo con OffsetDateTime (sin ZoneId)
         List<Range> base = schedules.stream()
-                .filter(s -> s.getEndTime().isAfter(from)) // descartar horarios ya pasados hoy
-                .map(s ->  new Range(s.getStartTime(), s.getEndTime(), staff))
+                .map(s -> new Range(
+                        OffsetDateTime.ofInstant(s.getStartTime(), from.getOffset()),
+                        OffsetDateTime.ofInstant(s.getEndTime(), from.getOffset()),
+                        staff
+                ))
+                .filter(s -> s.end.isAfter(from)) // descartar horarios ya pasados hoy
                 .toList();
 
         List<Range> blockers = new ArrayList<>();
