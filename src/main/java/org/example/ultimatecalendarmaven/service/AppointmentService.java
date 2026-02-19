@@ -26,6 +26,7 @@ public class AppointmentService {
     private final CustomerRepository customerRepository;
     private final AppointmentMapper appointmentMapper;
     private final CustomerService customerService;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public List<Appointment> findByTenantAndRange(UUID tenantId, OffsetDateTime from, OffsetDateTime to) {
@@ -93,6 +94,7 @@ public class AppointmentService {
         // 4) Persistir; si hay carrera, el EXCLUDE en DB lanzará una excepción de integridad -> 409
         try {
             Appointment saved = appointmentRepository.save(entity);
+            emailService.sendAppointmentConfirmation(saved);
             return saved;
         } catch (DataIntegrityViolationException ex) {
             // probablemente por constraint de solape (EXCLUDE)
