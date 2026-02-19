@@ -44,6 +44,9 @@ public class AvailabilityService {
         if (!service.getTenant().getId().equals(tenant.getId())) {
             throw new IllegalArgumentException("Service not in tenant");
         }
+        if (req.getFrom().isBefore(OffsetDateTime.now())) {
+            return List.of(); // No mostrar slots pasados
+        }
 
         OffsetDateTime from = req.getFrom();
 
