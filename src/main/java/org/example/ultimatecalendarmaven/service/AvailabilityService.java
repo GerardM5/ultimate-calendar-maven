@@ -46,9 +46,7 @@ public class AvailabilityService {
         }
 
         OffsetDateTime from = req.getFrom();
-        if (from == null || from.isBefore(OffsetDateTime.now())) {
-            from = OffsetDateTime.now();
-        }
+
         ZoneId zone = ZoneId.of(tenant.getTimezone());
 
         List<Range> slotsAll = new ArrayList<>();
@@ -203,9 +201,7 @@ public class AvailabilityService {
         if (to.isBefore(from)) {
             throw new IllegalArgumentException("'to' must be on or after 'from'");
         }
-        if (from.isBefore(OffsetDateTime.now())){
-            from = OffsetDateTime.now();
-        }
+
 
         // Reutilizamos validaciones básicas cargando tenant/service/staff solo una vez
         var tenant = tenantRepository.findById(tenantId)
@@ -225,6 +221,7 @@ public class AvailabilityService {
         }
 
         List<DayAvailabilityDTO> result = new ArrayList<>();
+
 
         for (OffsetDateTime f = from; !f.isAfter(to); f = f.plusDays(1)) {
             // construimos el request del día
