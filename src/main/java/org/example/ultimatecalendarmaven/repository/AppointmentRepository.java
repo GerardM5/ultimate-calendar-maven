@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
         JpaSpecificationExecutor<Appointment> {
@@ -40,4 +41,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
     );
 
     boolean existsByStaffAndStartsAtLessThanAndEndsAtGreaterThanAndActiveTrue(Staff staff, OffsetDateTime endsAt, OffsetDateTime startsAt);
+
+    Optional<Appointment> findByConfirmationToken(String confirmationToken);
 }

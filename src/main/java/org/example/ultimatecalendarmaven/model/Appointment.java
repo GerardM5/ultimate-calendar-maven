@@ -60,10 +60,14 @@ public class Appointment {
     @Column(name = "active", insertable = false, updatable = false)
     private Boolean active;
 
+    @Column(name = "confirmation_token", unique = true, updatable = false)
+    private String confirmationToken;
+
     @PrePersist
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
         if (status == null) status = AppointmentStatus.PENDING;
         if (createdAt == null) createdAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (confirmationToken == null) confirmationToken = UUID.randomUUID().toString();
     }
 }

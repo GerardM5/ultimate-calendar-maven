@@ -117,6 +117,14 @@ public class AppointmentService {
                 .orElse(false);
     }
 
+    public Appointment confirmByToken(String token) {
+        Appointment appt = appointmentRepository.findByConfirmationToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid confirmation token"));
+        if (appt.getStatus() == AppointmentStatus.CONFIRMED) return appt;
+        appt.setStatus(AppointmentStatus.CONFIRMED);
+        return appointmentRepository.save(appt);
+    }
+
     // ---- Error de conflicto semántico (409)
     public static class ConflictException extends RuntimeException {
         public ConflictException(String msg) { super(msg); }
