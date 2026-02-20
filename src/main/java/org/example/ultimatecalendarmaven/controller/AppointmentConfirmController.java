@@ -2,6 +2,7 @@ package org.example.ultimatecalendarmaven.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.AppointmentConfirmed;
 import org.example.ultimatecalendarmaven.model.Appointment;
 import org.example.ultimatecalendarmaven.service.AppointmentService;
 import org.example.ultimatecalendarmaven.utils.HtmlUtils;
@@ -23,7 +24,7 @@ public class AppointmentConfirmController {
     @GetMapping(value = "/confirm", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> confirm(@RequestParam String token) {
         try {
-            Appointment appt = appointmentService.confirmByToken(token);
+            AppointmentConfirmed appt = appointmentService.confirmByToken(token);
             String html = buildConfirmedHtml(appt);
             return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
         } catch (IllegalArgumentException e) {
@@ -36,11 +37,7 @@ public class AppointmentConfirmController {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private String buildConfirmedHtml(Appointment appt) {
-        String customerName = HtmlUtils.escapeHtml(appt.getCustomer().getName());
-        String serviceName  = HtmlUtils.escapeHtml(appt.getService().getName());
-        String staffName    = HtmlUtils.escapeHtml(appt.getStaff().getName());
-        String dateTime     = appt.getStartsAt().toString();
+    private String buildConfirmedHtml(AppointmentConfirmed appt) {
 
         return "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\">"
                 + "<title>Reserva confirmada</title>"
@@ -57,11 +54,11 @@ public class AppointmentConfirmController {
                 + "<div class=\"card\">"
                 + "<div class=\"icon\">✅</div>"
                 + "<h1>¡Reserva confirmada!</h1>"
-                + "<p>Hola <strong>" + customerName + "</strong>, tu reserva ha sido confirmada con éxito.</p>"
+                + "<p>Hola <strong>" + appt.customerName() + "</strong>, tu reserva ha sido confirmada con éxito.</p>"
                 + "<div class=\"detail\">"
-                + "<p><strong>Servicio:</strong> " + serviceName + "</p>"
-                + "<p><strong>Profesional:</strong> " + staffName + "</p>"
-                + "<p><strong>Fecha y hora:</strong> " + dateTime + "</p>"
+                + "<p><strong>Servicio:</strong> " + appt.serviceName() + "</p>"
+                + "<p><strong>Profesional:</strong> " + appt.staffName() + "</p>"
+                + "<p><strong>Fecha y hora:</strong> " + appt.date() +" "+appt.time() + "</p>"
                 + "</div>"
                 + "<p>¡Te esperamos!</p>"
                 + "</div></body></html>";

@@ -1,6 +1,7 @@
 package org.example.ultimatecalendarmaven.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.ultimatecalendarmaven.dto.AppointmentConfirmed;
 import org.example.ultimatecalendarmaven.dto.AppointmentFilter;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.mapper.AppointmentMapper;
@@ -117,12 +118,13 @@ public class AppointmentService {
                 .orElse(false);
     }
 
-    public Appointment confirmByToken(String token) {
+    public AppointmentConfirmed confirmByToken(String token) {
         Appointment appt = appointmentRepository.findByConfirmationToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid confirmation token"));
-        if (appt.getStatus() == AppointmentStatus.CONFIRMED) return appt;
+        AppointmentConfirmed appointmentConfirmed = appointmentMapper.toConfirmed(appt);
+        if (appt.getStatus() == AppointmentStatus.CONFIRMED) return appointmentConfirmed;
         appt.setStatus(AppointmentStatus.CONFIRMED);
-        return appointmentRepository.save(appt);
+        return appointmentMapper.toConfirmed(appointmentRepository.save(appt));
     }
 
     // ---- Error de conflicto semántico (409)

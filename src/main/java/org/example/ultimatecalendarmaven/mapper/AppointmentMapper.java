@@ -1,5 +1,6 @@
 package org.example.ultimatecalendarmaven.mapper;
 
+import org.example.ultimatecalendarmaven.dto.AppointmentConfirmed;
 import org.example.ultimatecalendarmaven.dto.AppointmentRequestDTO;
 import org.example.ultimatecalendarmaven.dto.AppointmentResponseDTO;
 import org.example.ultimatecalendarmaven.dto.AppointmentSummaryDTO;
@@ -7,7 +8,10 @@ import org.example.ultimatecalendarmaven.model.Appointment;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Mapper(componentModel = "spring",
@@ -42,5 +46,30 @@ public interface AppointmentMapper {
     // Convierte entidad → SummaryDTO
     AppointmentSummaryDTO toSummary(Appointment appointment);
 
+
     List<AppointmentSummaryDTO> toSummaryList(List<Appointment> appointments);
+
+
+
+    @Mapping(target = "customerName", source = "customer.name")
+    @Mapping(target = "serviceName", source = "service.name")
+    @Mapping(target = "staffName", source = "staff.name")
+    @Mapping(target = "date", source = "startsAt", qualifiedByName = "startsAtToDate")
+    @Mapping(target = "time", source = "startsAt", qualifiedByName = "startsAtToTime")
+    AppointmentConfirmed toConfirmed(Appointment appointment);
+
+    @Named("startsAtToDate")
+    default String startsAtToDate(OffsetDateTime startsAt) {
+        if (startsAt == null) return null;
+
+        return startsAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    @Named("startsAtToTime")
+    default String startsAtToTime(OffsetDateTime startsAt) {
+        if (startsAt == null) return null;
+        // Ejemplo: 19:30
+        return startsAt.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
 }
