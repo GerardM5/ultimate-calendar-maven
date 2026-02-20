@@ -36,6 +36,7 @@ public interface AppointmentMapper {
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "endsAt", ignore = true)
     @Mapping(target = "priceCents", ignore = true)
+    @Mapping(target = "confirmationToken", ignore = true)
     Appointment toEntity(AppointmentRequestDTO dto);
 
     // Convierte entidad → SummaryDTO
