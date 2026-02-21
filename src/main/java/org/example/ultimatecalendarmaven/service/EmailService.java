@@ -5,6 +5,7 @@ import com.sendgrid.Request;
 import com.sendgrid.Response;
 import com.sendgrid.SendGrid;
 import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Attachments;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +16,13 @@ import org.example.ultimatecalendarmaven.model.ChannelType;
 import org.example.ultimatecalendarmaven.model.MessageLog;
 import org.example.ultimatecalendarmaven.repository.MessageLogRepository;
 import org.example.ultimatecalendarmaven.utils.HtmlUtils;
+import org.example.ultimatecalendarmaven.utils.IcsUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 @Slf4j
@@ -59,6 +63,19 @@ public class EmailService {
                     new Content("text/html", request.getHtmlContent())
             );
 
+            if (request.getIcsContent() != null) {
+                Attachments icsAttachment = new Attachments();
+                icsAttachment.setContent(Base64.getEncoder().encodeToString(
+                        request.getIcsContent().getBytes(StandardCharsets.UTF_8)));
+                icsAttachment.setType("text/calendar; method=REQUEST; charset=UTF-8");
+                String icsFilename = request.getRelatedAppointment() != null
+                        ? "appointment_" + request.getRelatedAppointment().getId() + ".ics"
+                        : "appointment.ics";
+                icsAttachment.setFilename(icsFilename);
+                icsAttachment.setDisposition("attachment");
+                mail.addAttachments(icsAttachment);
+            }
+
             Request sgRequest = new Request();
             sgRequest.setMethod(Method.POST);
             sgRequest.setEndpoint("mail/send");
@@ -93,6 +110,7 @@ public class EmailService {
                 .htmlContent(buildConfirmationHtml(appointment))
                 .template("appointment_confirmation")
                 .relatedAppointment(appointment)
+                .icsContent(IcsUtils.buildIcs(appointment))
                 .build());
     }
 
