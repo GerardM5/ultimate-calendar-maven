@@ -67,7 +67,7 @@ public class EmailService {
                 Attachments icsAttachment = new Attachments();
                 icsAttachment.setContent(Base64.getEncoder().encodeToString(
                         request.getIcsContent().getBytes(StandardCharsets.UTF_8)));
-                icsAttachment.setType("text/calendar; method=REQUEST; charset=UTF-8");
+                icsAttachment.setType("text/calendar");
                 String icsFilename = request.getRelatedAppointment() != null
                         ? "appointment_" + request.getRelatedAppointment().getId() + ".ics"
                         : "appointment.ics";
@@ -86,9 +86,10 @@ public class EmailService {
                 status = "SENT";
                 log.info("Email sent to {} [template={}]", request.getTo(), request.getTemplate());
             } else {
-                log.warn("SendGrid responded with {} for {}", response.getStatusCode(), request.getTo());
+                log.warn("SendGrid responded with {} for {}. Body={}",
+                        response.getStatusCode(), request.getTo(), response.getBody());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Failed to send email to {}: {}", request.getTo(), e.getMessage(), e);
         } finally {
             saveLog(request, status);
