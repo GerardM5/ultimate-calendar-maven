@@ -18,4 +18,7 @@ public class EmailRequest {
     private final String template = "custom";
 
     private final Appointment relatedAppointment;
+
+    /** Raw iCalendar (.ics) content to attach to the email, or {@code null} if no attachment. */
+    private final String icsContent;
 }
